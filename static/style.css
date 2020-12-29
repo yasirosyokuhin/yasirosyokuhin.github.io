@@ -127,3 +127,116 @@ h1, h2 {
   background: rgba(0, 124, 0, 0.3);
   box-shadow: 0 2px 2px rgba(0,124,0,0.1);
 }
+
+
+.tabmenu{
+	position: relative;
+	width: 280px;
+	height: 200px;
+	font-size: 0;
+}
+.tabmenu span{
+	position: absolute;
+	top: 30px;
+	left: 0;
+	display: block;
+	margin: 4px 0 0;
+	padding: 10px;
+	width: 100%;
+	height: 140px;
+	border: 1px solid #0ae;
+	-webkit-border-radius: 0 6px 6px 6px;
+	border-radius: 0 6px 6px 6px;
+	font-size: 14px;
+}
+.tabmenu input[type="radio"]{
+	display: none;
+}
+.tabmenu input[type="radio"] + em{
+	position: relative;
+	z-index: 100;
+	display: inline-block;
+	margin: 0 4px 0 0;
+	padding: 4px 0 0;
+	min-width: 80px;
+	-webkit-border-radius: 6px 6px 0 0;
+	border-radius: 6px 6px 0 0;
+	background: #ddd;
+	color: #000;
+	text-align: center;
+	font-size: 14px;
+	font-style: normal;
+	line-height: 30px;
+	cursor: pointer;
+}
+.tabmenu input[type="radio"]:checked + em{
+	background: #0ae;
+	color: #fff;
+}
+.tabmenu input[type="radio"]:checked + em::after {
+	position: absolute;
+	left: 50%;
+	display: block;
+	margin-left: -9px;
+	border: 9px solid transparent;
+	border-top: 9px solid #0ae;
+	content: "";
+}
+.tabmenu input[type="radio"] + em ~ span{
+	display: none;
+}
+.tabmenu input[type="radio"]:checked + em ~ span{
+	display: block;
+}
+
+.btn2_wrap{
+    display:inline-block;
+    position: relative;
+}
+.btn2_wrap input{
+    opacity: 0;
+    position: absolute;
+    left: 0;
+}
+.btn2_wrap label{
+    padding: 2px 5px;
+    border-radius: 20px;
+    background: #eee;
+    display: inline-block;
+    cursor: pointer;
+    transition: .5s;
+}
+.btn2_wrap label:hover,
+.btn2_wrap input:checked + label{
+    background: #af975e;
+    color: #FFF;
+}
+.btn2_wrap input:focus + label{
+    box-shadow: 0 0 4px #af975e;
+}
+
+.btn3_wrap{
+    display:inline-block;
+    position: relative;
+}
+.btn3_wrap input{
+    opacity: 0;
+    position: absolute;
+    left: 0;
+}
+.btn3_wrap label{
+    padding: 10px 20px;
+    border-radius: 20px;
+    background: #eee;
+    display: inline-block;
+    cursor: pointer;
+    transition: .5s;
+}
+.btn3_wrap label:hover,
+.btn3_wrap input:checked + label{
+    background: #af975e;
+    color: #FFF;
+}
+.btn3_wrap input:focus + label{
+    box-shadow: 0 0 4px #af975e;
+}
