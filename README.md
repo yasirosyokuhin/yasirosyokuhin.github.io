@@ -1,0 +1,1 @@
+# yasirosyokuhin.github.io
