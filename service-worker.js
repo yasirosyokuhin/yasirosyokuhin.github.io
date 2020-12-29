@@ -2,6 +2,7 @@
 var CACHE_NAME = 'saizeriya-cache-v1';
 var urlsToCache = [
     '/index.html',
+    '/detail.html',
     '/static/style.css',
     '/gacha.js',
     '/menu.json.js'
