@@ -1,0 +1,54 @@
+<!doctype html>
+<title>サイゼリヤ1000円ガチャ</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=750">
+<link rel=stylesheet type=text/css href="static/style.css">
+
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/x-icon" href="static/favicon.ico">
+<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="manifest.webmanifest" />
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KK3EFXNHR0"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'G-KK3EFXNHR0');
+</script>
+
+<div class=page>
+    <div class="heading">
+        <h1>サイゼリヤ</h1>
+        <h1>1000円ガチャ</h1>
+    </div>
+
+    <div class="buttonarea">
+        <a href="./" class="btn">ガチャを回す</a>
+    </div>
+    <div id="result" class="result"></div>
+</div>
+
+<script src="menu.json.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alasql@0.6"></script>
+<script src="gacha.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/pwacompat" crossorigin="anonymous"></script>
+<script>
+    ! function (d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (!d.getElementById(id)) {
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://platform.twitter.com/widgets.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }
+    }(document, "script", "twitter-wjs");
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js').then(function () { console.log('Service Worker Registered'); });
+    }
+</script>
