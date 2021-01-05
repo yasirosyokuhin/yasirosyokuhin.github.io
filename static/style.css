@@ -141,7 +141,6 @@ h1, h2 {
 	display: block;
 	margin: 4px 0 0;
 	padding: 10px;
-	height: 140px;
 	border: 1px solid #0ae;
 	-webkit-border-radius: 0 6px 6px 6px;
 	border-radius: 0 6px 6px 6px;
@@ -203,6 +202,8 @@ h1, h2 {
     display: inline-block;
     cursor: pointer;
     transition: .5s;
+    margin: 0.1em 0;
+
 }
 .btn2_wrap label:hover,
 .btn2_wrap input:checked + label{
