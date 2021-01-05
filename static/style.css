@@ -141,12 +141,11 @@ h1, h2 {
 	display: block;
 	margin: 4px 0 0;
 	padding: 10px;
-	width: 100%;
 	height: 140px;
 	border: 1px solid #0ae;
 	-webkit-border-radius: 0 6px 6px 6px;
 	border-radius: 0 6px 6px 6px;
-	font-size: 14px;
+	font-size: 18px;
 }
 .tabmenu input[type="radio"]{
 	display: none;
