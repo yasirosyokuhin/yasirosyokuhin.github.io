@@ -153,7 +153,6 @@ h1, h2 {
 	position: relative;
 	z-index: 100;
 	display: inline-block;
-	margin: 0 4px 0 0;
 	padding: 4px 0 0;
 	min-width: 80px;
 	-webkit-border-radius: 6px 6px 0 0;
