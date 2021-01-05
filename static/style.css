@@ -176,7 +176,6 @@ h1, h2 {
 	display: block;
 	margin-left: -9px;
 	border: 9px solid transparent;
-	border-top: 9px solid #0ae;
 	content: "";
 }
 .tabmenu input[type="radio"] + em ~ span{
