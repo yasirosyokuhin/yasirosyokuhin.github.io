@@ -5,6 +5,7 @@ var urlsToCache = [
     '/detail.html',
     '/static/style.css',
     '/gacha.js',
+    '/serach-horse.js',
     '/menu.json.js'
 ];
 
