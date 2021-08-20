@@ -6,8 +6,8 @@ var urlsToCache = [
     '/static/style.css',
     '/pagectrl.js',
     '/serach-horse.js',
-    '/factor.js.js'
-    '/telent.js'
+    '/factor.js.js',
+    '/telent.js',
     '/horselist.js'
 ];
 
