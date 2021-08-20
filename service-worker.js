@@ -5,10 +5,7 @@ var urlsToCache = [
     '/detail.html',
     '/static/style.css',
     '/pagectrl.js',
-    '/serach-horse.js',
-    '/static/factor.js.js',
-    '/static/telent.js',
-    '/static/horselist.js'
+    '/serach-horse.js'
 ];
 
 // install cache
