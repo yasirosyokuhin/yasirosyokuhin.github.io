@@ -4,9 +4,11 @@ var urlsToCache = [
     '/index.html',
     '/detail.html',
     '/static/style.css',
-    '/gacha.js',
+    '/pagectrl.js',
     '/serach-horse.js',
-    '/menu.json.js'
+    '/factor.js.js'
+    '/telent.js'
+    '/horselist.js'
 ];
 
 // install cache
