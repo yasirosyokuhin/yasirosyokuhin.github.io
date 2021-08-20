@@ -29,17 +29,19 @@
 
 <script async src="https://cdn.jsdelivr.net/npm/pwacompat" crossorigin="anonymous"></script>
 <script>
-if ('serviceWorker' in navigator) {
+   if ('serviceWorker' in navigator) {
   navigator.serviceWorker
-    .register('/serviceworker.js')
+    .register('/service-worker.js')
     .then(registration => {
-       console.log('登録');
+      // 登録成功
+      console.log('登録');
       registration.onupdatefound = function() {
         console.log('アップデートがあります！');
         registration.update();
       }
     })
     .catch(err => {
+      // 登録失敗
       console.log('登録失敗');
   });
 }
