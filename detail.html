@@ -8,11 +8,12 @@
 <link rel="icon" type="image/x-icon" href="https://dq310.com/js/favicon.ico">
 <link rel="manifest" href="./manifest.json">
 <link rel="manifest" href="manifest.webmanifest" />
+<link rel=apple-touch-icon href=img/apple-touch-icon-48x48.png>
+<link rel=apple-touch-icon sizes=96x96 href=static/apple-touch-icon-96x96.png>
+<link rel=apple-touch-icon sizes=196x196 href=static/apple-touch-icon-196x196.png>
 
 <script src="https://dq310.com/js/jquery.min.js"></script>
 <script src="pagectrl.js"></script>
-
-
 <div class="page">
     <div id="article" class="article">
 		<div id="header" class="header"></div>
@@ -29,7 +30,20 @@
 
 <script async src="https://cdn.jsdelivr.net/npm/pwacompat" crossorigin="anonymous"></script>
 <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./service-worker.js').then(function () { console.log('Service Worker Registered'); });
-    }
+   if ('serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register('/service-worker.js')
+    .then(registration => {
+      // 登録成功
+      console.log('登録');
+      //registration.onupdatefound = function() {
+      //  console.log('アップデートがあります！');
+      //  registration.update();
+     // }
+    })
+    .catch(err => {
+      // 登録失敗
+      console.log('登録失敗');
+  });
+}
 </script>

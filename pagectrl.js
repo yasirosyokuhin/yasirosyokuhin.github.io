@@ -181,7 +181,12 @@ function loadSession() {
 	 var chk_idx_ary = [];
      if (chk_idx != null) {
      	chk_idx_ary =  chk_idx.split(',');	
+     } else {
+     	// nullは初回なのでデフォルト設定
+     	$("#hosi-5").prop('checked',true);
      }
+     
+     
      var ped  = sessionStorage.getItem('ped');
      var sei  = sessionStorage.getItem('sei');
      var factor_idx = sessionStorage.getItem('factor_idx');
