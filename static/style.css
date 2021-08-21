@@ -739,6 +739,7 @@ img {
 .footertxt {
 	font-size: 18px;
 	margin: 8px 0 0;
+	color: #848484;
 
 
 }
@@ -747,7 +748,7 @@ img {
   font-weight: bold;
   padding: .0em 1.0em;
   margin: 0.4em;
-  background-color: #00acee;
+  background-color: #AAC4F2;
   color: #fff;
   text-decoration: none;
   border-style: none;
@@ -758,3 +759,6 @@ img {
   transition: 1.0s ;
   color: #fff;
 }
+
+
+    color: #848484;
