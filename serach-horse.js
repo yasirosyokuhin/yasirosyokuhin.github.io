@@ -1003,7 +1003,7 @@ function getFactorList() {
 	tag += '</div>';
     tag += '</span></label>';
     tag += '</div><div class="footertxt">';
-    tag += '<a class="tw_share" href="http://twitter.com/share" target="_blank">共有</a>';
+    tag += '<a class="tw_share" href="http://twitter.com/share?url=https://yasirosyokuhin.github.io/index.html&text=ダビマス検索ツール&hashtags=ダビマス検索ツール" target="_blank">共有</a>';
 	tag += 'ダビマス検索ツール<a href="https://twitter.com/papayuki2016">@ふじろん牧場</a></div>';
 	
 	return tag

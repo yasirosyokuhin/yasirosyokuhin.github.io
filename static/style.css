@@ -740,8 +740,9 @@ img {
 	font-size: 18px;
 	margin: 8px 0 0;
 	color: #848484;
-
-
+}
+.footertxt a {
+	color: #848484;
 }
 
 .tw_share {
