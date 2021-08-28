@@ -1,0 +1,59 @@
+<!doctype html>
+<title>ダビマス検索</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=750">
+<link rel=stylesheet type=text/css href="static/style.css">
+
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="author" content="yasirosyokuhin">
+<link rel="icon" type="image/x-icon" href="https://dq310.com/js/favicon.ico">
+<link rel="manifest" href="./manifest.json">
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel=apple-touch-icon href=static/apple-touch-icon-48x48.png>
+<link rel=apple-touch-icon sizes=96x96 href=static/apple-touch-icon-96x96.png>
+<link rel=apple-touch-icon sizes=196x196 href=static/apple-touch-icon-196x196.png>
+
+<script src="https://dq310.com/js/jquery.min.js"></script>
+<script src="pagectrl.js"></script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4EE1XT3PJE"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4EE1XT3PJE');
+</script>
+<div class="page">
+    <div id="article" class="article">
+		<div id="header" class="header"></div>
+		<div id="horselist" class="horselist"></div>
+		<div id="footer" class="footer"></div>
+	</div>
+</div>
+
+<script src="static/horselist.js?20210828"></script>
+<script src="static/factor.js?20210828"></script>
+<script src="static/telent.js?20210828"></script>
+<script src="https://dq310.com/js/alasql@0.6"></script>
+<script src="serach-horse.js"></script>
+
+<script async src="https://cdn.jsdelivr.net/npm/pwacompat" crossorigin="anonymous"></script>
+<script>
+   if ('serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register('/service-worker.js')
+    .then(registration => {
+      // 登録成功
+      console.log('登録');
+      //registration.onupdatefound = function() {
+      //  console.log('アップデートがあります！');
+      //  registration.update();
+     // }
+    })
+    .catch(err => {
+      // 登録失敗
+      console.log('登録失敗');
+  });
+}
+</script>
