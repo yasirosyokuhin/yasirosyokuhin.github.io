@@ -970,10 +970,10 @@ function getFactorList() {
 	sql_base = 'select id ,name from(SELECT id,"短:" + name as name FROM ? h  where spp = 1 union all SELECT "none" as id,"短:" + name as name FROM ? h  where factor in("spp","spp-dart","spp-soujuku","spp-sp","st-spp")) order by name';
 	var j_horselist_spp = alasql(sql_base, [factor, horse]);
 	
-	sql_base = 'select id ,name from(SELECT id,"長:" + name as name FROM ? h  where stp = 1 union all SELECT "none" as id,"長:" + name as name FROM ? h  where factor in("bansei-stp","ken-stp","sp-stp","stp","stp-dart","stp-joubu","temper-stp")) order by name';
+	sql_base = 'select id ,name from(SELECT id,"長:" + name as name FROM ? h  where stp = 1 union all SELECT "none" as id,"長:" + name as name FROM ? h  where factor in("bansei-stp","ken-stp","sp-stp","stp","stp-dart","stp-joubu","temper-stp","st-stp" ,"stp-st")) order by name';
 	var j_horselist_stp = alasql(sql_base, [factor, horse]);
 	
-	sql_base = 'select id ,name from(SELECT id,"底:" + name as name FROM ? h  where st = 1 union all SELECT "none" as id,"底:" + name as name FROM ? h  where factor in("bansei-st","st","st-soujuku","st","st-sp","st-soujuku","st-stp","st-temper"))order by name';
+	sql_base = 'select id ,name from(SELECT id,"底:" + name as name FROM ? h  where st = 1 union all SELECT "none" as id,"底:" + name as name FROM ? h  where factor in("bansei-st","st","st-soujuku","st","st-sp","st-soujuku","st-stp" ,"stp-st","st-temper"))order by name';
 	var j_horselist_st = alasql(sql_base, [factor, horse]);
 	
 	sql_base = 'select id ,name from(SELECT id,"堅:" + name as name FROM ? h  where ken = 1 union all SELECT "none" as id,"堅:" + name as name FROM ? h  where factor in("sp-ken","ken-stp") )order by name';
