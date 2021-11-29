@@ -118,8 +118,15 @@ function getSelfFactorImg(factor, name) {
 		return tag;
 	
 	}
-	var result = factor.split('-');
-	
+        if ( name.match(/神速/)) { 
+                tag +=  '<img src="static/img/rfactor_02.png" alt="">';
+                tag +=  '<img src="static/img/rfactor_02.png" alt="">';
+                tag +=  '<img src="static/img/rfactor_02.png" alt="">';
+                tag +='&nbsp';
+                return tag;
+        }
+
+
 	// 元データがずれているので、補正
 	if (result.length ==2 && result[0] == 'sp') {
 		var wk = result[0];
@@ -489,10 +496,8 @@ function getContentsDetail() {
 	tag += '父</td>';
 	tag += '<td class="horse" colspan="2">';
 	tag += factorlist[detailHorse.tht -1].name;
-	tag += '</td><td class="factor" width="50">';
 	tag += '</td>';
-	tag += '<td class="factor" width="50">';
-	tag += '</td>';
+	tag += getFactorImg(detailHorse.tht -1);
 	tag += '</tr>';
 	tag += '<tr>';
 	tag += '<td class="father">';
