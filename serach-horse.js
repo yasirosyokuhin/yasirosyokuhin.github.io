@@ -118,13 +118,15 @@ function getSelfFactorImg(factor, name) {
 		return tag;
 	
 	}
-        if ( name.match(/神速/)) { 
-                tag +=  '<img src="static/img/rfactor_02.png" alt="">';
-                tag +=  '<img src="static/img/rfactor_02.png" alt="">';
-                tag +=  '<img src="static/img/rfactor_02.png" alt="">';
-                tag +='&nbsp';
-                return tag;
-        }
+    if ( name.match(/神速/)) { 
+            tag +=  '<img src="static/img/rfactor_02.png" alt="">';
+            tag +=  '<img src="static/img/rfactor_02.png" alt="">';
+            tag +=  '<img src="static/img/rfactor_02.png" alt="">';
+            tag +='&nbsp';
+            return tag;
+    }
+    
+    var result = factor.split('-');
 
 
 	// 元データがずれているので、補正
