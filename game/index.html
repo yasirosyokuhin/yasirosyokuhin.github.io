@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゲームランチャー</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 10px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: clamp(1.5rem, 5vw, 2rem);
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .game-tile {
+            background-color: white;
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            aspect-ratio: 1/1;
+        }
+        
+        .game-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .game-icon {
+            width: 50%;
+            height: 50%;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .game-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 12px;
+        }
+        
+        /* カスタムアイコンスタイル */
+        .roulette-icon {
+            color: #D4AF37;
+        }
+        
+        .crossy-icon {
+            color: #4CAF50;
+        }
+        
+        .poker-icon {
+            color: #E91E63;
+        }
+        
+        .daihugou-icon {
+            color: #9C27B0;
+        }
+        
+        .soukoban-icon {
+            color: #795548;
+        }
+        
+        .butlle-icon {
+            color: #2196F3;
+        }
+        
+        .matigaisagashi-icon {
+            color: #FF9800;
+        }
+        
+        .waniwani-icon {
+            color: #4CAF50;
+        }
+        
+        .fuloopy_birds-icon {
+            color: #FFEB3B;
+        }
+        
+        .suiri-icon {
+            color: #607D8B;
+        }
+
+        /* レスポンシブデザイン */
+        @media (min-width: 600px) {
+            .game-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+            
+            body {
+                padding: 15px;
+            }
+            
+            .game-tile {
+                padding: 15px;
+            }
+            
+            .game-title {
+                font-size: 14px;
+            }
+        }
+        
+        @media (min-width: 900px) {
+            .game-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+            }
+            
+            body {
+                padding: 20px;
+            }
+        }
+        
+        @media (min-width: 1200px) {
+            .game-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>ゲームランチャー</h1>
+    
+    <div class="game-grid">
+        <!-- ゲーム1: ピカデリーサーカス風ゲーム (ルーレット) -->
+        <a href="roulette.html" class="game-tile">
+            <div class="game-icon roulette-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <line x1="12" y1="2" x2="12" y2="4"></line>
+                    <line x1="12" y1="20" x2="12" y2="22"></line>
+                    <line x1="2" y1="12" x2="4" y2="12"></line>
+                    <line x1="20" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"></line>
+                    <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"></line>
+                    <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"></line>
+                    <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"></line>
+                </svg>
+            </div>
+            <div class="game-title">ピカデリーサーカス</div>
+        </a>
+        
+        <!-- ゲーム2: クロッシーロード風ゲーム (電車) -->
+        <a href="crossy.html" class="game-tile">
+            <div class="game-icon crossy-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 8h18l-2 4H5L3 8z"></path>
+                    <path d="M17 12v4H7v-4"></path>
+                    <path d="M13 12v4"></path>
+                    <path d="M3 8v8h3"></path>
+                    <path d="M21 8v8h-3"></path>
+                    <circle cx="8" cy="20" r="2"></circle>
+                    <circle cx="16" cy="20" r="2"></circle>
+                </svg>
+            </div>
+            <div class="game-title">クロッシーロード</div>
+        </a>
+        
+        <!-- ゲーム3: ビデオポーカー (ハート) -->
+        <a href="poker.html" class="game-tile">
+            <div class="game-icon poker-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+                </svg>
+            </div>
+            <div class="game-title">ビデオポーカー</div>
+        </a>
+        
+        <!-- ゲーム4: 大富豪 (王冠) - 修正済み -->
+        <a href="daihugou.html" class="game-tile">
+            <div class="game-icon daihugou-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 8l4.5 1L12 6l4.5 3L21 8v2c0 8-4 12-9 12s-9-4-9-12V8z"></path>
+                    <path d="M12 6v12"></path>
+                    <path d="M3 8v2"></path>
+                    <path d="M21 8v2"></path>
+                    <path d="M7.5 9v3"></path>
+                    <path d="M16.5 11v3"></path>
+                </svg>
+            </div>
+            <div class="game-title">大富豪</div>
+        </a>
+        
+        <!-- ゲーム5: 倉庫番 -->
+        <a href="soukoban.html" class="game-tile">
+            <div class="game-icon soukoban-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+            </div>
+            <div class="game-title">倉庫番</div>
+        </a>
+        
+        <!-- ゲーム6: 魚釣り (魚) - 修正済み -->
+        <a href="butlle.html" class="game-tile">
+            <div class="game-icon butlle-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6.5 12C5 10 5 7 7.5 5S12 4 14 6s2 5 0 8-4 5-7 5c0-1 0-3 2-3s4-1 5-3"></path>
+                    <path d="M16 8c1.5 0 3 .5 3 2s-1 2-3 2"></path>
+                    <circle cx="16" cy="7" r="1"></circle>
+                    <path d="M18 12v.5"></path>
+                </svg>
+            </div>
+            <div class="game-title">魚釣り</div>
+        </a>
+        
+        <!-- ゲーム7: 間違いさがし (クエスション) -->
+        <a href="matigaisagashi.html" class="game-tile">
+            <div class="game-icon matigaisagashi-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <div class="game-title">間違いさがし</div>
+        </a>
+        
+        <!-- ゲーム8: ワニワニぱにっく (ハンマー) -->
+        <a href="waniwani.html" class="game-tile">
+            <div class="game-icon waniwani-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"></path>
+                    <path d="M17.64 15L22 10.64"></path>
+                    <path d="M20.91 11.7l-1.25-1.25c-.6-.6-.93-1.4-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"></path>
+                </svg>
+            </div>
+            <div class="game-title">ワニワニぱにっく</div>
+        </a>
+        
+        <!-- ゲーム9: フロッピーバード (ひよこ) - 修正済み -->
+        <a href="fuloopy_birds.html" class="game-tile">
+            <div class="game-icon fuloopy_birds-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="10" r="5"></circle>
+                    <path d="M8 15l-2 4"></path>
+                    <path d="M16 15l2 4"></path>
+                    <path d="M9 13l-2 3"></path>
+                    <path d="M15 13l2 3"></path>
+                    <path d="M10 9h-.01"></path>
+                    <path d="M14 9h-.01"></path>
+                    <path d="M11 11.5h2"></path>
+                    <path d="M10 14c1.333 0 2.667 0 4 0"></path>
+                    <path d="M12 7V5"></path>
+                </svg>
+            </div>
+            <div class="game-title">フロッピーバード</div>
+        </a>
+        
+        <!-- ゲーム10: 推理ゲーム (パイプ) - 修正済み -->
+        <a href="suiri.html" class="game-tile">
+            <div class="game-icon suiri-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 5c0 1.5-1 2-2 2s-2-.5-2-2 1-2 2-2 2 .5 2 2z"></path>
+                    <path d="M12 7v1"></path>
+                    <path d="M13 8h5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-5"></path>
+                    <path d="M20 12h-4a2 2 0 0 0-2 2v6"></path>
+                    <path d="M16 20H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h9"></path>
+                </svg>
+            </div>
+            <div class="game-title">推理ゲーム</div>
+        </a>
+    </div>
+</body>
+</html>

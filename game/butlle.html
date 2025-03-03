@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>魚釣りゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            height: 100vh;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+            color: white;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.8);
+            font-size: 18px;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+        #fishingButton {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            width: 100px;
+            height: 100px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: none;
+        }
+        #fishingButton:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            display: none;
+        }
+        #gameOverScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+        #restartButton {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin-top: 30px;
+            border-radius: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #restartButton:hover {
+            background-color: #45a049;
+        }
+        #catchMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #fishInfo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 2;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            color: white;
+            max-width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 14px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div>スコア: <span id="score">0</span></div>
+            <div>残りエサ: <span id="bait">5</span></div>
+            <div>釣った魚: <span id="caughtCount">0</span>種類</div>
+        </div>
+        <button id="fishingButton">釣り上げる！</button>
+        <div id="catchMessage"></div>
+        <div id="fishInfo" class="hidden"></div>
+        <div id="gameOverScreen">
+            <h1>ゲームオーバー</h1>
+            <div>最終スコア: <span id="finalScore">0</span></div>
+            <div>釣った魚: <span id="finalCaughtCount">0</span>種類</div>
+            <div id="rareFishMessage"></div>
+            <button id="restartButton">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <script>
+        // ゲーム初期化
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const fishingButton = document.getElementById('fishingButton');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const restartButton = document.getElementById('restartButton');
+        const scoreElement = document.getElementById('score');
+        const baitElement = document.getElementById('bait');
+        const caughtCountElement = document.getElementById('caughtCount');
+        const finalScoreElement = document.getElementById('finalScore');
+        const finalCaughtCountElement = document.getElementById('finalCaughtCount');
+        const rareFishMessageElement = document.getElementById('rareFishMessage');
+        const catchMessageElement = document.getElementById('catchMessage');
+        const fishInfoElement = document.getElementById('fishInfo');
+
+        // キャンバスサイズを設定
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // ゲーム状態
+        let gameState = {
+            score: 0,
+            bait: 5,
+            caughtFish: new Set(),
+            activeBait: null,
+            fishes: [],
+            fishingTarget: null,
+            gameOver: false,
+            fisher: {
+                x: canvas.width / 2,
+                y: canvas.height * 0.2,
+                width: 100,
+                height: 80,
+                type: 'rabbit' // 釣り人の動物タイプ
+            },
+            waterLevel: canvas.height * 0.2,
+            lastTimestamp: 0,
+            caughtRareFish: false,
+            baitDetectionRadius: 50, // 餌の検出半径
+            lastClickTime: 0,
+            doubleClickDelay: 300 // ダブルクリック検出のための遅延（ミリ秒）
+        };
+
+        // 魚のデータベース
+        const fishDatabase = [
+            // 一般的な魚 (50点) - 40種類
+            { name: "イワシ", type: "fish", rarity: 1, points: 50, color: "#B0C4DE", size: { min: 15, max: 30 }, catchRate: 0.9 },
+            { name: "アジ", type: "fish", rarity: 1, points: 50, color: "#87CEFA", size: { min: 20, max: 35 }, catchRate: 0.9 },
+            { name: "サバ", type: "fish", rarity: 1, points: 50, color: "#4682B4", size: { min: 25, max: 40 }, catchRate: 0.85 },
+            { name: "カタクチイワシ", type: "fish", rarity: 1, points: 50, color: "#B0E0E6", size: { min: 10, max: 20 }, catchRate: 0.95 },
+            { name: "メバル", type: "fish", rarity: 1, points: 50, color: "#CD5C5C", size: { min: 15, max: 30 }, catchRate: 0.85 },
+            { name: "カサゴ", type: "fish", rarity: 1, points: 50, color: "#BC8F8F", size: { min: 20, max: 35 }, catchRate: 0.8 },
+            { name: "アイゴ", type: "fish", rarity: 1, points: 50, color: "#778899", size: { min: 20, max: 35 }, catchRate: 0.85 },
+            { name: "キス", type: "fish", rarity: 1, points: 50, color: "#F5DEB3", size: { min: 15, max: 25 }, catchRate: 0.8 },
+            { name: "ハゼ", type: "fish", rarity: 1, points: 50, color: "#8B4513", size: { min: 10, max: 20 }, catchRate: 0.9 },
+            { name: "カレイ", type: "fish", rarity: 1, points: 50, color: "#D2B48C", size: { min: 25, max: 40 }, catchRate: 0.8 },
+            { name: "シロギス", type: "fish", rarity: 1, points: 50, color: "#FAEBD7", size: { min: 15, max: 30 }, catchRate: 0.85 },
+            { name: "ウミタナゴ", type: "fish", rarity: 1, points: 50, color: "#E6E6FA", size: { min: 15, max: 25 }, catchRate: 0.85 },
+            { name: "メジナ", type: "fish", rarity: 1, points: 50, color: "#708090", size: { min: 20, max: 35 }, catchRate: 0.8 },
+            { name: "クロダイ", type: "fish", rarity: 1, points: 50, color: "#2F4F4F", size: { min: 25, max: 40 }, catchRate: 0.75 },
+            { name: "マダイ", type: "fish", rarity: 1, points: 50, color: "#FA8072", size: { min: 30, max: 50 }, catchRate: 0.7 },
+            { name: "コノシロ", type: "fish", rarity: 1, points: 50, color: "#C0C0C0", size: { min: 20, max: 35 }, catchRate: 0.85 },
+            { name: "ボラ", type: "fish", rarity: 1, points: 50, color: "#A9A9A9", size: { min: 25, max: 45 }, catchRate: 0.8 },
+            { name: "カマス", type: "fish", rarity: 1, points: 50, color: "#6495ED", size: { min: 25, max: 45 }, catchRate: 0.75 },
+            { name: "シイラ", type: "fish", rarity: 1, points: 50, color: "#00BFFF", size: { min: 40, max: 70 }, catchRate: 0.65 },
+            { name: "メバチ", type: "fish", rarity: 1, points: 50, color: "#FF6347", size: { min: 25, max: 40 }, catchRate: 0.75 },
+            { name: "イサキ", type: "fish", rarity: 1, points: 50, color: "#ADD8E6", size: { min: 20, max: 35 }, catchRate: 0.8 },
+            { name: "シマアジ", type: "fish", rarity: 1, points: 50, color: "#87CEEB", size: { min: 25, max: 40 }, catchRate: 0.75 },
+            { name: "カワハギ", type: "fish", rarity: 1, points: 50, color: "#DCDCDC", size: { min: 15, max: 30 }, catchRate: 0.85 },
+            { name: "マゴチ", type: "fish", rarity: 1, points: 50, color: "#8B8970", size: { min: 25, max: 45 }, catchRate: 0.7 },
+            { name: "キチヌ", type: "fish", rarity: 1, points: 50, color: "#D3D3D3", size: { min: 20, max: 35 }, catchRate: 0.8 },
+            { name: "ヒラメ", type: "fish", rarity: 1, points: 50, color: "#E0E0E0", size: { min: 30, max: 60 }, catchRate: 0.7 },
+            { name: "イシダイ", type: "fish", rarity: 1, points: 50, color: "#F8F8FF", size: { min: 30, max: 50 }, catchRate: 0.7 },
+            { name: "ウミタナゴ", type: "fish", rarity: 1, points: 50, color: "#9370DB", size: { min: 15, max: 25 }, catchRate: 0.85 },
+            { name: "メバル", type: "fish", rarity: 1, points: 50, color: "#CD5C5C", size: { min: 15, max: 30 }, catchRate: 0.85 },
+            { name: "カサゴ", type: "fish", rarity: 1, points: 50, color: "#BC8F8F", size: { min: 20, max: 35 }, catchRate: 0.8 },
+            { name: "アイナメ", type: "fish", rarity: 1, points: 50, color: "#696969", size: { min: 20, max: 40 }, catchRate: 0.75 },
+            { name: "メジナ", type: "fish", rarity: 1, points: 50, color: "#A9A9A9", size: { min: 20, max: 35 }, catchRate: 0.8 },
+            { name: "サヨリ", type: "fish", rarity: 1, points: 50, color: "#AFEEEE", size: { min: 25, max: 40 }, catchRate: 0.8 },
+            { name: "アナゴ", type: "fish", rarity: 1, points: 50, color: "#D2691E", size: { min: 30, max: 60 }, catchRate: 0.7 },
+            { name: "スズキ", type: "fish", rarity: 1, points: 50, color: "#F5F5F5", size: { min: 30, max: 70 }, catchRate: 0.7 },
+            { name: "タチウオ", type: "fish", rarity: 1, points: 50, color: "#E6E6FA", size: { min: 50, max: 100 }, catchRate: 0.65 },
+            { name: "ニシン", type: "fish", rarity: 1, points: 50, color: "#F0F8FF", size: { min: 20, max: 35 }, catchRate: 0.85 },
+            { name: "トビウオ", type: "fish", rarity: 1, points: 50, color: "#4169E1", size: { min: 25, max: 40 }, catchRate: 0.75 },
+            { name: "イボダイ", type: "fish", rarity: 1, points: 50, color: "#FFF5EE", size: { min: 15, max: 30 }, catchRate: 0.85 },
+            { name: "アカハタ", type: "fish", rarity: 1, points: 50, color: "#B22222", size: { min: 25, max: 40 }, catchRate: 0.75 },
+
+            // 珍しい魚と生物 (100点) - 30種類
+            { name: "イカ", type: "squid", rarity: 2, points: 100, color: "#FF69B4", size: { min: 20, max: 40 }, catchRate: 0.7 },
+            { name: "タコ", type: "octopus", rarity: 2, points: 100, color: "#8B008B", size: { min: 30, max: 50 }, catchRate: 0.65 },
+            { name: "ホタテ", type: "shellfish", rarity: 2, points: 100, color: "#FFA07A", size: { min: 10, max: 15 }, catchRate: 0.7 },
+            { name: "エビ", type: "shrimp", rarity: 2, points: 100, color: "#FF7F50", size: { min: 5, max: 15 }, catchRate: 0.75 },
+            { name: "カニ", type: "crab", rarity: 2, points: 100, color: "#FF4500", size: { min: 10, max: 25 }, catchRate: 0.7 },
+            { name: "ヒラマサ", type: "fish", rarity: 2, points: 100, color: "#FFD700", size: { min: 40, max: 70 }, catchRate: 0.6 },
+            { name: "ブリ", type: "fish", rarity: 2, points: 100, color: "#DAA520", size: { min: 50, max: 80 }, catchRate: 0.55 },
+            { name: "カンパチ", type: "fish", rarity: 2, points: 100, color: "#B8860B", size: { min: 45, max: 75 }, catchRate: 0.6 },
+            { name: "イシガキダイ", type: "fish", rarity: 2, points: 100, color: "#CD5C5C", size: { min: 30, max: 50 }, catchRate: 0.65 },
+            { name: "チダイ", type: "fish", rarity: 2, points: 100, color: "#F08080", size: { min: 25, max: 40 }, catchRate: 0.7 },
+            { name: "アカエイ", type: "ray", rarity: 2, points: 100, color: "#A52A2A", size: { min: 40, max: 80 }, catchRate: 0.6 },
+            { name: "トラフグ", type: "blowfish", rarity: 2, points: 100, color: "#F4A460", size: { min: 30, max: 50 }, catchRate: 0.65 },
+            { name: "キンメダイ", type: "fish", rarity: 2, points: 100, color: "#FF0000", size: { min: 25, max: 40 }, catchRate: 0.7 },
+            { name: "アコウダイ", type: "fish", rarity: 2, points: 100, color: "#8B0000", size: { min: 35, max: 60 }, catchRate: 0.6 },
+            { name: "イトヨリダイ", type: "fish", rarity: 2, points: 100, color: "#FF69B4", size: { min: 25, max: 40 }, catchRate: 0.7 },
+            { name: "ハマフエフキ", type: "fish", rarity: 2, points: 100, color: "#F5DEB3", size: { min: 30, max: 50 }, catchRate: 0.65 },
+            { name: "カツオ", type: "fish", rarity: 2, points: 100, color: "#008080", size: { min: 40, max: 70 }, catchRate: 0.6 },
+            { name: "ソウダガツオ", type: "fish", rarity: 2, points: 100, color: "#2F4F4F", size: { min: 35, max: 60 }, catchRate: 0.65 },
+            { name: "シビレエイ", type: "ray", rarity: 2, points: 100, color: "#808080", size: { min: 40, max: 80 }, catchRate: 0.55 },
+            { name: "ニザダイ", type: "fish", rarity: 2, points: 100, color: "#000080", size: { min: 25, max: 40 }, catchRate: 0.7 },
+            { name: "アオブダイ", type: "fish", rarity: 2, points: 100, color: "#0000FF", size: { min: 30, max: 50 }, catchRate: 0.65 },
+            { name: "ハリセンボン", type: "blowfish", rarity: 2, points: 100, color: "#8A2BE2", size: { min: 20, max: 40 }, catchRate: 0.65 },
+            { name: "カワハギ", type: "fish", rarity: 2, points: 100, color: "#9ACD32", size: { min: 20, max: 35 }, catchRate: 0.7 },
+            { name: "オキアミ", type: "shrimp", rarity: 2, points: 100, color: "#FF1493", size: { min: 2, max: 5 }, catchRate: 0.8 },
+            { name: "イカナゴ", type: "fish", rarity: 2, points: 100, color: "#C71585", size: { min: 10, max: 20 }, catchRate: 0.75 },
+            { name: "シャコ", type: "shrimp", rarity: 2, points: 100, color: "#FF00FF", size: { min: 10, max: 20 }, catchRate: 0.7 },
+            { name: "ナマコ", type: "seacucumber", rarity: 2, points: 100, color: "#800080", size: { min: 15, max: 30 }, catchRate: 0.7 },
+            { name: "ウニ", type: "seaurchin", rarity: 2, points: 100, color: "#9400D3", size: { min: 5, max: 15 }, catchRate: 0.75 },
+            { name: "ホヤ", type: "seapineapple", rarity: 2, points: 100, color: "#8B008B", size: { min: 10, max: 20 }, catchRate: 0.7 },
+            { name: "カワハギ", type: "fish", rarity: 2, points: 100, color: "#4B0082", size: { min: 20, max: 35 }, catchRate: 0.7 },
+
+            // レア魚 (200点) - 20種類
+            { name: "マグロ", type: "fish", rarity: 3, points: 200, color: "#800000", size: { min: 80, max: 150 }, catchRate: 0.4 },
+            { name: "カジキ", type: "fish", rarity: 3, points: 200, color: "#000080", size: { min: 100, max: 200 }, catchRate: 0.35 },
+            { name: "サメ", type: "shark", rarity: 3, points: 200, color: "#808080", size: { min: 100, max: 200 }, catchRate: 0.35 },
+            { name: "クロマグロ", type: "fish", rarity: 3, points: 200, color: "#191970", size: { min: 100, max: 200 }, catchRate: 0.3 },
+            { name: "メカジキ", type: "fish", rarity: 3, points: 200, color: "#483D8B", size: { min: 120, max: 220 }, catchRate: 0.3 },
+            { name: "キハダマグロ", type: "fish", rarity: 3, points: 200, color: "#DAA520", size: { min: 90, max: 180 }, catchRate: 0.35 },
+            { name: "シマガツオ", type: "fish", rarity: 3, points: 200, color: "#708090", size: { min: 60, max: 100 }, catchRate: 0.45 },
+            { name: "ヒラマサ", type: "fish", rarity: 3, points: 200, color: "#FFD700", size: { min: 70, max: 120 }, catchRate: 0.4 },
+            { name: "マトウダイ", type: "fish", rarity: 3, points: 200, color: "#CD853F", size: { min: 50, max: 80 }, catchRate: 0.5 },
+            { name: "アカムツ", type: "fish", rarity: 3, points: 200, color: "#DC143C", size: { min: 40, max: 70 }, catchRate: 0.5 },
+            { name: "アマダイ", type: "fish", rarity: 3, points: 200, color: "#FF8C00", size: { min: 35, max: 60 }, catchRate: 0.55 },
+            { name: "アラ", type: "fish", rarity: 3, points: 200, color: "#A0522D", size: { min: 80, max: 150 }, catchRate: 0.4 },
+            { name: "イシナギ", type: "fish", rarity: 3, points: 200, color: "#2E8B57", size: { min: 70, max: 130 }, catchRate: 0.4 },
+            { name: "イトヒキアジ", type: "fish", rarity: 3, points: 200, color: "#4682B4", size: { min: 60, max: 100 }, catchRate: 0.45 },
+            { name: "オニカマス", type: "fish", rarity: 3, points: 200, color: "#5F9EA0", size: { min: 80, max: 140 }, catchRate: 0.4 },
+            { name: "クエ", type: "fish", rarity: 3, points: 200, color: "#8FBC8F", size: { min: 90, max: 160 }, catchRate: 0.35 },
+            { name: "シイラ", type: "fish", rarity: 3, points: 200, color: "#00CED1", size: { min: 80, max: 150 }, catchRate: 0.4 },
+            { name: "タイヘイヨウマグロ", type: "fish", rarity: 3, points: 200, color: "#1E90FF", size: { min: 120, max: 220 }, catchRate: 0.3 },
+            { name: "マカジキ", type: "fish", rarity: 3, points: 200, color: "#6A5ACD", size: { min: 110, max: 210 }, catchRate: 0.3 },
+            { name: "マンボウ", type: "sunfish", rarity: 3, points: 200, color: "#6495ED", size: { min: 100, max: 200 }, catchRate: 0.35 },
+
+            // 幻の魚 (300点) - 10種類
+            { name: "ダイオウイカ", type: "giantsquid", rarity: 4, points: 300, color: "#FF4500", size: { min: 150, max: 300 }, catchRate: 0.2 },
+            { name: "シーラカンス", type: "coelacanth", rarity: 4, points: 300, color: "#4682B4", size: { min: 100, max: 200 }, catchRate: 0.15 },
+            { name: "ホホジロザメ", type: "shark", rarity: 4, points: 300, color: "#778899", size: { min: 200, max: 400 }, catchRate: 0.1 },
+            { name: "ジンベエザメ", type: "shark", rarity: 4, points: 300, color: "#00008B", size: { min: 300, max: 600 }, catchRate: 0.05 },
+            { name: "ラブカ", type: "fish", rarity: 4, points: 300, color: "#8B0000", size: { min: 100, max: 200 }, catchRate: 0.15 },
+            { name: "オオサンショウウオ", type: "salamander", rarity: 4, points: 300, color: "#696969", size: { min: 80, max: 150 }, catchRate: 0.2 },
+            { name: "リュウグウノツカイ", type: "oarfish", rarity: 4, points: 300, color: "#C0C0C0", size: { min: 300, max: 500 }, catchRate: 0.05 },
+            { name: "メガマウス", type: "shark", rarity: 4, points: 300, color: "#2F4F4F", size: { min: 250, max: 450 }, catchRate: 0.1 },
+            { name: "デメニギス", type: "fish", rarity: 4, points: 300, color: "#A9A9A9", size: { min: 80, max: 150 }, catchRate: 0.2 },
+            { name: "チョウチンアンコウ", type: "anglerfish", rarity: 4, points: 300, color: "#800000", size: { min: 50, max: 100 }, catchRate: 0.25 },
+
+            // 伝説の魚 (500点) - レア5の魚は5種類
+            { name: "幻の金色マグロ", type: "fish", rarity: 5, points: 500, color: "#FFD700", size: { min: 200, max: 400 }, catchRate: 0.02 },
+            { name: "竜宮城の主", type: "fish", rarity: 5, points: 500, color: "#4169E1", size: { min: 250, max: 450 }, catchRate: 0.01 },
+            { name: "深海の怪物", type: "monster", rarity: 5, points: 500, color: "#8B008B", size: { min: 300, max: 500 }, catchRate: 0.01 },
+            { name: "海神の使い", type: "fish", rarity: 5, points: 500, color: "#00FFFF", size: { min: 200, max: 400 }, catchRate: 0.02 },
+            { name: "不死身の古代魚", type: "fish", rarity: 5, points: 500, color: "#FF00FF", size: { min: 150, max: 300 }, catchRate: 0.03 }
+        ];
+
+        // 魚を生成する関数
+        function createFish() {
+            const fishType = getRandomFishType();
+            const direction = Math.random() > 0.5 ? 1 : -1; // 1: 右向き, -1: 左向き
+            const baseSize = Math.random() * (fishType.size.max - fishType.size.min) + fishType.size.min;
+            
+            return {
+                type: fishType,
+                x: direction === 1 ? -baseSize : canvas.width + baseSize,
+                y: Math.random() * (canvas.height - gameState.waterLevel - baseSize) + gameState.waterLevel + baseSize,
+                width: baseSize,
+                height: baseSize / 2,
+                speed: (Math.random() * 1 + 0.5) * (3 - fishType.rarity * 0.4), // レア度が高いほど速くなる
+                direction: direction,
+                catchable: false,
+                wiggleOffset: 0,
+                wiggleSpeed: Math.random() * 0.05 + 0.02
+            };
+        }
+
+        // ランダムに魚のタイプを選ぶ
+        function getRandomFishType() {
+            const rand = Math.random();
+            // レア度に基づいて魚を選択
+            if (rand < 0.01) { // 1%
+                // 伝説の魚 (レア度5)
+                return fishDatabase.filter(fish => fish.rarity === 5)[Math.floor(Math.random() * fishDatabase.filter(fish => fish.rarity === 5).length)];
+            } else if (rand < 0.05) { // 4%
+                // 幻の魚 (レア度4)
+                return fishDatabase.filter(fish => fish.rarity === 4)[Math.floor(Math.random() * fishDatabase.filter(fish => fish.rarity === 4).length)];
+            } else if (rand < 0.15) { // 10%
+                // レア魚 (レア度3)
+                return fishDatabase.filter(fish => fish.rarity === 3)[Math.floor(Math.random() * fishDatabase.filter(fish => fish.rarity === 3).length)];
+            } else if (rand < 0.35) { // 20%
+                // 珍しい魚 (レア度2)
+                return fishDatabase.filter(fish => fish.rarity === 2)[Math.floor(Math.random() * fishDatabase.filter(fish => fish.rarity === 2).length)];
+            } else { // 65%
+                // 一般的な魚 (レア度1)
+                return fishDatabase.filter(fish => fish.rarity === 1)[Math.floor(Math.random() * fishDatabase.filter(fish => fish.rarity === 1).length)];
+            }
+        }
+
+        // 餌を投げる
+        function throwBait(x, y) {
+            if (gameState.bait <= 0 || gameState.activeBait || gameState.gameOver) return;
+            
+            gameState.activeBait = {
+                x: gameState.fisher.x,
+                y: gameState.waterLevel,
+                targetY: y,
+                radius: 5,
+                speed: 5,
+                falling: true
+            };
+            
+            gameState.bait--;
+            baitElement.textContent = gameState.bait;
+        }
+
+        // 釣り上げる
+        function catchFish() {
+            if (!gameState.fishingTarget || gameState.gameOver) return;
+            
+            const fish = gameState.fishingTarget;
+            const rand = Math.random();
+            
+            if (rand <= fish.type.catchRate) {
+                // 成功
+                gameState.score += fish.type.points;
+                scoreElement.textContent = gameState.score;
+                
+                // 初めて釣った魚を記録
+                if (!gameState.caughtFish.has(fish.type.name)) {
+                    gameState.caughtFish.add(fish.type.name);
+                    caughtCountElement.textContent = gameState.caughtFish.size;
+                    
+                    // レア度4以上の魚を釣ったらフラグを立てる
+                    if (fish.type.rarity >= 4) {
+                        gameState.caughtRareFish = true;
+                    }
+                }
+                
+                // キャッチメッセージを表示
+                showCatchMessage(`${fish.type.name}を釣り上げた！ +${fish.type.points}点`, '#4CAF50');
+                
+                // 釣り上げた魚の情報を表示
+                showFishInfo(fish.type);
+                
+                // 該当の魚を削除
+                gameState.fishes = gameState.fishes.filter(f => f !== fish);
+            } else {
+                // 失敗 - エサだけ消費
+                showCatchMessage(`${fish.type.name}に餌を取られた...`, '#FF5252');
+            }
+            
+            // 状態をリセット
+            gameState.activeBait = null;
+            gameState.fishingTarget = null;
+            fishingButton.style.display = 'none';
+            
+            // 餌がなくなったらゲームオーバー
+            if (gameState.bait <= 0 && !gameState.activeBait) {
+                gameOver();
+            }
+        }
+
+        // 捕獲メッセージを表示
+        function showCatchMessage(message, color) {
+            catchMessageElement.textContent = message;
+            catchMessageElement.style.color = color;
+            catchMessageElement.style.opacity = 1;
+            
+            setTimeout(() => {
+                catchMessageElement.style.opacity = 0;
+            }, 2000);
+        }
+
+        // 釣った魚の情報を表示
+        function showFishInfo(fishType) {
+            fishInfoElement.innerHTML = `
+                <h3>${fishType.name}</h3>
+                <p>レア度: ${'★'.repeat(fishType.rarity)}</p>
+                <p>得点: ${fishType.points}点</p>
+            `;
+            fishInfoElement.classList.remove('hidden');
+            
+            setTimeout(() => {
+                fishInfoElement.classList.add('hidden');
+            }, 3000);
+        }
+
+        // ゲームオーバー
+        function gameOver() {
+            gameState.gameOver = true;
+            finalScoreElement.textContent = gameState.score;
+            finalCaughtCountElement.textContent = gameState.caughtFish.size;
+            
+            // レア魚を釣っていた場合の特別メッセージ
+            if (gameState.caughtRareFish) {
+                rareFishMessageElement.textContent = "すごい！レアな魚を釣り上げることができました！";
+            } else {
+                rareFishMessageElement.textContent = "次はもっとレアな魚を狙おう！";
+            }
+            
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // ゲームリスタート
+        function restartGame() {
+            gameState = {
+                score: 0,
+                bait: 5,
+                caughtFish: new Set(),
+                activeBait: null,
+                fishes: [],
+                fishingTarget: null,
+                gameOver: false,
+                fisher: {
+                    x: canvas.width / 2,
+                    y: canvas.height * 0.2,
+                    width: 100,
+                    height: 80,
+                    type: 'rabbit' // 釣り人の動物タイプを維持
+                },
+                waterLevel: canvas.height * 0.2,
+                lastTimestamp: 0,
+                caughtRareFish: false,
+                baitDetectionRadius: 50,
+                lastClickTime: 0,
+                doubleClickDelay: 300
+            };
+            
+            scoreElement.textContent = gameState.score;
+            baitElement.textContent = gameState.bait;
+            caughtCountElement.textContent = gameState.caughtFish.size;
+            
+            gameOverScreen.style.display = 'none';
+            fishingButton.style.display = 'none';
+        }
+
+        // 水生生物を描画
+        function drawFish(fish) {
+            ctx.save();
+            
+            // 生物の位置に移動して向きに合わせて反転
+            ctx.translate(fish.x, fish.y);
+            if (fish.direction === -1) {
+                ctx.scale(-1, 1);
+            }
+            
+            // 生物のタイプに応じて異なる描画
+            switch(fish.type.type) {
+                case "fish":
+                    drawNormalFish(fish);
+                    break;
+                case "squid":
+                case "giantsquid":
+                    drawSquid(fish);
+                    break;
+                case "octopus":
+                    drawOctopus(fish);
+                    break;
+                case "shrimp":
+                    drawShrimp(fish);
+                    break;
+                case "crab":
+                    drawCrab(fish);
+                    break;
+                case "shark":
+                    drawShark(fish);
+                    break;
+                case "ray":
+                    drawRay(fish);
+                    break;
+                case "blowfish":
+                    drawBlowfish(fish);
+                    break;
+                case "anglerfish":
+                    drawAnglerfish(fish);
+                    break;
+                case "sunfish":
+                    drawSunfish(fish);
+                    break;
+                case "seacucumber":
+                    drawSeaCucumber(fish);
+                    break;
+                case "seaurchin":
+                    drawSeaUrchin(fish);
+                    break;
+                case "shellfish":
+                    drawShellfish(fish);
+                    break;
+                case "seapineapple":
+                    drawSeaPineapple(fish);
+                    break;
+                case "oarfish":
+                    drawOarfish(fish);
+                    break;
+                case "coelacanth":
+                    drawCoelacanth(fish);
+                    break;
+                case "salamander":
+                    drawSalamander(fish);
+                    break;
+                case "monster":
+                    drawMonster(fish);
+                    break;
+                default:
+                    drawNormalFish(fish);
+            }
+            
+            ctx.restore();
+        }
+
+        // 普通の魚を描画
+        function drawNormalFish(fish) {
+            // 魚の体を描画
+            ctx.fillStyle = fish.type.color;
+            
+            // Wiggle effect
+            fish.wiggleOffset += fish.wiggleSpeed;
+            const wiggleAmount = Math.sin(fish.wiggleOffset) * 3;
+            
+            // 魚の体を描く
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.quadraticCurveTo(
+                -fish.width / 4, -fish.height / 2 + wiggleAmount,
+                0, -fish.height / 2
+            );
+            ctx.quadraticCurveTo(
+                fish.width / 4, -fish.height / 2 - wiggleAmount,
+                fish.width / 2, 0
+            );
+            ctx.quadraticCurveTo(
+                fish.width / 4, fish.height / 2 - wiggleAmount,
+                0, fish.height / 2
+            );
+            ctx.quadraticCurveTo(
+                -fish.width / 4, fish.height / 2 + wiggleAmount,
+                -fish.width / 2, 0
+            );
+            ctx.fill();
+            
+            // 尾びれを描く
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width * 0.8, -fish.height / 2);
+            ctx.lineTo(-fish.width * 0.8, fish.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 目を描く
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 4, -fish.height / 5, fish.width / 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 4 + fish.width / 30, -fish.height / 5, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // イカを描画
+        function drawSquid(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 3, fish.height, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 触手
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI + Math.sin(fish.wiggleOffset) * 0.2;
+                ctx.beginPath();
+                ctx.moveTo(0, fish.height * 0.8);
+                ctx.quadraticCurveTo(
+                    Math.cos(angle) * fish.width * 0.4,
+                    fish.height * 1.2 + Math.sin(fish.wiggleOffset) * 5,
+                    Math.cos(angle) * fish.width * 0.3,
+                    fish.height * 1.5
+                );
+                ctx.lineWidth = fish.width / 15;
+                ctx.stroke();
+            }
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 3, fish.width / 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 6, -fish.height / 3, fish.width / 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 3, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 6, -fish.height / 3, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // タコを描画
+        function drawOctopus(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.arc(0, 0, fish.width / 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 触手
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * fish.width / 3, Math.sin(angle) * fish.width / 3);
+                
+                fish.wiggleOffset += 0.01;
+                const wiggle = Math.sin(fish.wiggleOffset + i) * 10;
+                
+                for (let j = 1; j <= 3; j++) {
+                    const curveX = Math.cos(angle) * (fish.width / 3 + fish.width / 3 * j) + wiggle * (j / 3);
+                    const curveY = Math.sin(angle) * (fish.width / 3 + fish.width / 3 * j);
+                    ctx.lineTo(curveX, curveY);
+                }
+                
+                ctx.lineWidth = fish.width / 10;
+                ctx.stroke();
+            }
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 8, -fish.width / 8, fish.width / 15, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 8, -fish.width / 8, fish.width / 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 8, -fish.width / 8, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 8, -fish.width / 8, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // エビを描画
+        function drawShrimp(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 2, fish.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // カーブした尾
+            ctx.beginPath();
+            ctx.moveTo(fish.width / 2, 0);
+            ctx.quadraticCurveTo(
+                fish.width * 0.7, -fish.height / 2,
+                fish.width * 0.9, -fish.height / 4
+            );
+            ctx.lineTo(fish.width * 0.9, fish.height / 4);
+            ctx.quadraticCurveTo(
+                fish.width * 0.7, fish.height / 2,
+                fish.width / 2, 0
+            );
+            ctx.fill();
+            
+            // 触角
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width * 0.8, -fish.height / 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width * 0.8, fish.height / 2);
+            ctx.stroke();
+            
+            // 足
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(-fish.width / 3 + i * fish.width / 8, fish.height / 2);
+                ctx.lineTo(-fish.width / 3 + i * fish.width / 8, fish.height);
+                ctx.lineWidth = fish.width / 30;
+                ctx.stroke();
+            }
+            
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(-fish.width / 3, -fish.height / 6, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // カニを描画
+        function drawCrab(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.arc(0, 0, fish.width / 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // はさみ
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 3, 0);
+            ctx.lineTo(-fish.width * 0.8, -fish.height / 2);
+            ctx.lineTo(-fish.width * 0.9, -fish.height / 2);
+            ctx.lineTo(-fish.width * 0.8, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 3, 0);
+            ctx.lineTo(-fish.width * 0.8, fish.height / 2);
+            ctx.lineTo(-fish.width * 0.9, fish.height / 2);
+            ctx.lineTo(-fish.width * 0.8, 0);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 足
+            for (let i = 0; i < 4; i++) {
+                const y = (i % 2 === 0) ? 1 : -1;
+                ctx.beginPath();
+                ctx.moveTo(0, y * fish.height / 4);
+                ctx.lineTo(fish.width / 2, y * fish.height / 2);
+                ctx.lineTo(fish.width * 0.7, y * fish.height / 3);
+                ctx.lineWidth = fish.width / 20;
+                ctx.stroke();
+            }
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(-fish.width / 6, -fish.height / 8, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 8, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(-fish.width / 6, -fish.height / 8, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 8, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // サメを描画
+        function drawShark(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // Wiggle effect
+            fish.wiggleOffset += fish.wiggleSpeed;
+            const wiggleAmount = Math.sin(fish.wiggleOffset) * 3;
+            
+            // 体
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.quadraticCurveTo(
+                -fish.width / 4, -fish.height / 2 + wiggleAmount,
+                fish.width / 3, -fish.height / 3
+            );
+            ctx.lineTo(fish.width / 2, 0);
+            ctx.lineTo(fish.width / 3, fish.height / 3);
+            ctx.quadraticCurveTo(
+                -fish.width / 4, fish.height / 2 + wiggleAmount,
+                -fish.width / 2, 0
+            );
+            ctx.fill();
+            
+            // 尾びれ
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width * 0.8, -fish.height * 0.8);
+            ctx.lineTo(-fish.width * 0.6, 0);
+            ctx.lineTo(-fish.width * 0.8, fish.height * 0.8);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 背びれ
+            ctx.beginPath();
+            ctx.moveTo(0, -fish.height / 3);
+            ctx.lineTo(0, -fish.height);
+            ctx.lineTo(fish.width / 5, -fish.height / 3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 3, -fish.height / 6, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 3, -fish.height / 6, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 怖い口
+            ctx.beginPath();
+            ctx.moveTo(fish.width / 2, 0);
+            ctx.lineTo(fish.width / 3, fish.height / 12);
+            ctx.lineTo(fish.width / 2, fish.height / 6);
+            ctx.stroke();
+        }
+
+        // エイを描画
+        function drawRay(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 2, fish.height, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 翼
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.quadraticCurveTo(
+                0, -fish.height * 1.2,
+                fish.width / 2, 0
+            );
+            ctx.quadraticCurveTo(
+                0, fish.height * 1.2,
+                -fish.width / 2, 0
+            );
+            ctx.fill();
+            
+            // 尾
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width, 0);
+            ctx.lineWidth = fish.width / 20;
+            ctx.stroke();
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 6, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 6, -fish.height / 6, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 6, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 6, -fish.height / 6, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // フグを描画
+        function drawBlowfish(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 膨らんだ体
+            ctx.beginPath();
+            ctx.arc(0, 0, fish.width / 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // とげとげ
+            for (let i = 0; i < 16; i++) {
+                const angle = (i / 16) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * fish.width / 3, Math.sin(angle) * fish.width / 3);
+                ctx.lineTo(Math.cos(angle) * fish.width / 2, Math.sin(angle) * fish.width / 2);
+                ctx.lineWidth = fish.width / 40;
+                ctx.stroke();
+            }
+            
+            // 尾びれ
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 3, 0);
+            ctx.lineTo(-fish.width / 2, -fish.height / 4);
+            ctx.lineTo(-fish.width / 2, fish.height / 4);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 6, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, -fish.height / 6, fish.width / 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 口
+            ctx.beginPath();
+            ctx.arc(fish.width / 4, fish.height / 8, fish.width / 25, 0, Math.PI);
+            ctx.stroke();
+        }
+
+        // チョウチンアンコウを描画
+        function drawAnglerfish(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width / 4, -fish.height / 2);
+            ctx.lineTo(fish.width / 4, -fish.height / 2);
+            ctx.lineTo(fish.width / 2, 0);
+            ctx.lineTo(fish.width / 4, fish.height / 2);
+            ctx.lineTo(-fish.width / 4, fish.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 発光器
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 4, -fish.height / 2);
+            ctx.lineTo(-fish.width / 4, -fish.height);
+            ctx.lineWidth = fish.width / 30;
+            ctx.stroke();
+            
+            ctx.fillStyle = '#FFFF00';
+            ctx.beginPath();
+            ctx.arc(-fish.width / 4, -fish.height, fish.width / 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 大きな口
+            ctx.beginPath();
+            ctx.moveTo(fish.width / 2, 0);
+            ctx.lineTo(fish.width / 4, fish.height / 10);
+            ctx.lineTo(fish.width / 2, fish.height / 5);
+            ctx.lineWidth = fish.width / 20;
+            ctx.stroke();
+            
+            // 鋭い歯
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(fish.width / 3 + i * fish.width / 30, fish.height / 20);
+                ctx.lineTo(fish.width / 3 + i * fish.width / 30, fish.height / 10);
+                ctx.lineWidth = fish.width / 50;
+                ctx.stroke();
+            }
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 5, -fish.height / 4, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 5, -fish.height / 4, fish.width / 35, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // マンボウを描画
+        function drawSunfish(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 3, fish.height * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 特徴的な背びれと尻びれ
+            ctx.beginPath();
+            ctx.moveTo(0, -fish.height * 0.8);
+            ctx.lineTo(0, -fish.height * 1.5);
+            ctx.lineTo(fish.width / 5, -fish.height * 0.8);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, fish.height * 0.8);
+            ctx.lineTo(0, fish.height * 1.5);
+            ctx.lineTo(fish.width / 5, fish.height * 0.8);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 尾びれ
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 3, 0);
+            ctx.lineTo(-fish.width / 2, -fish.height / 2);
+            ctx.lineTo(-fish.width / 2, fish.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, 0, fish.width / 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 6, 0, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 口
+            ctx.beginPath();
+            ctx.arc(fish.width / 4, fish.height / 8, fish.width / 25, 0, Math.PI);
+            ctx.stroke();
+        }
+
+        // ナマコを描画
+        function drawSeaCucumber(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 2, fish.height / 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // イボイボの質感
+            for (let i = 0; i < 20; i++) {
+                const x = (Math.random() - 0.5) * fish.width * 0.8;
+                const y = (Math.random() - 0.5) * fish.height * 0.5;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, fish.width / 25, 0, Math.PI * 2);
+                ctx.fillStyle = adjustColorBrightness(fish.type.color, 20);
+                ctx.fill();
+            }
+        }
+
+        // 色の明るさを調整
+        function adjustColorBrightness(hex, percent) {
+            // Hexカラーコードを解析
+            const r = parseInt(hex.substr(1, 2), 16);
+            const g = parseInt(hex.substr(3, 2), 16);
+            const b = parseInt(hex.substr(5, 2), 16);
+            
+            // 明るさを調整
+            const brightness = percent / 100;
+            const newR = Math.min(255, Math.round(r * (1 + brightness)));
+            const newG = Math.min(255, Math.round(g * (1 + brightness)));
+            const newB = Math.min(255, Math.round(b * (1 + brightness)));
+            
+            // 新しいHexカラーコードを作成
+            return `#${(newR).toString(16).padStart(2, '0')}${(newG).toString(16).padStart(2, '0')}${(newB).toString(16).padStart(2, '0')}`;
+        }
+
+        // ウニを描画
+        function drawSeaUrchin(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 中心の体
+            ctx.beginPath();
+            ctx.arc(0, 0, fish.width / 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // トゲトゲ
+            for (let i = 0; i < 24; i++) {
+                const angle = (i / 24) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * fish.width / 4, Math.sin(angle) * fish.width / 4);
+                ctx.lineTo(Math.cos(angle) * fish.width / 2, Math.sin(angle) * fish.width / 2);
+                ctx.lineWidth = fish.width / 50;
+                ctx.stroke();
+            }
+        }
+
+        // ホタテを描画
+        function drawShellfish(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 貝殻
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 2, fish.height / 2, 0, 0, Math.PI);
+            ctx.fill();
+            
+            // 貝殻の筋
+            for (let i = 0; i < 7; i++) {
+                const angle = (i / 7) * Math.PI - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(Math.cos(angle) * fish.width / 2, Math.sin(angle) * fish.height / 2);
+                ctx.lineWidth = fish.width / 50;
+                ctx.strokeStyle = adjustColorBrightness(fish.type.color, -20);
+                ctx.stroke();
+            }
+        }
+
+        // ホヤを描画
+        function drawSeaPineapple(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 3, fish.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // イボイボの質感
+            for (let i = 0; i < 15; i++) {
+                const x = (Math.random() - 0.5) * fish.width * 0.5;
+                const y = (Math.random() - 0.5) * fish.height * 0.8;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, fish.width / 20, 0, Math.PI * 2);
+                ctx.fillStyle = adjustColorBrightness(fish.type.color, 30);
+                ctx.fill();
+            }
+            
+            // 上部の開口部
+            ctx.beginPath();
+            ctx.ellipse(0, -fish.height / 3, fish.width / 8, fish.height / 10, 0, 0, Math.PI * 2);
+            ctx.fillStyle = adjustColorBrightness(fish.type.color, -30);
+            ctx.fill();
+        }
+
+        // リュウグウノツカイを描画
+        function drawOarfish(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 細長い体
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            
+            // Wiggle effect
+            fish.wiggleOffset += fish.wiggleSpeed;
+            
+            // 波状の体を描く
+            for (let i = -fish.width / 2; i <= fish.width / 2; i += 10) {
+                const wiggleY = Math.sin((i + fish.wiggleOffset) * 0.1) * fish.height / 3;
+                ctx.lineTo(i, wiggleY);
+            }
+            
+            // 体を閉じる
+            for (let i = fish.width / 2; i >= -fish.width / 2; i -= 10) {
+                const wiggleY = Math.sin((i + fish.wiggleOffset) * 0.1) * fish.height / 3;
+                ctx.lineTo(i, wiggleY + fish.height / 10);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            
+            // 赤い背びれ
+            ctx.fillStyle = '#FF0000';
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            
+            for (let i = -fish.width / 2; i <= fish.width / 2; i += 10) {
+                const wiggleY = Math.sin((i + fish.wiggleOffset) * 0.1) * fish.height / 3;
+                ctx.lineTo(i, wiggleY - fish.height / 4);
+            }
+            
+            for (let i = fish.width / 2; i >= -fish.width / 2; i -= 10) {
+                const wiggleY = Math.sin((i + fish.wiggleOffset) * 0.1) * fish.height / 3;
+                ctx.lineTo(i, wiggleY);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            
+            // 顔の部分
+            ctx.fillStyle = fish.type.color;
+            ctx.beginPath();
+            ctx.ellipse(fish.width / 2, 0, fish.width / 10, fish.height / 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 2 + fish.width / 20, -fish.height / 10, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // シーラカンスを描画
+        function drawCoelacanth(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // Wiggle effect
+            fish.wiggleOffset += fish.wiggleSpeed;
+            const wiggleAmount = Math.sin(fish.wiggleOffset) * 3;
+            
+            // 体
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.quadraticCurveTo(
+                -fish.width / 4, -fish.height / 2 + wiggleAmount,
+                fish.width / 3, -fish.height / 3
+            );
+            ctx.lineTo(fish.width / 2, 0);
+            ctx.lineTo(fish.width / 3, fish.height / 3);
+            ctx.quadraticCurveTo(
+                -fish.width / 4, fish.height / 2 + wiggleAmount,
+                -fish.width / 2, 0
+            );
+            ctx.fill();
+            
+            // 特徴的な三葉状の尾びれ
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            ctx.lineTo(-fish.width * 0.8, -fish.height / 2);
+            ctx.lineTo(-fish.width * 0.7, 0);
+            ctx.lineTo(-fish.width * 0.8, fish.height / 2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 特徴的な全ての鰭を描画
+            ctx.beginPath();
+            ctx.moveTo(0, -fish.height / 3);
+            ctx.lineTo(-fish.width / 6, -fish.height * 0.8);
+            ctx.lineTo(fish.width / 8, -fish.height / 3);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, fish.height / 3);
+            ctx.lineTo(-fish.width / 6, fish.height * 0.8);
+            ctx.lineTo(fish.width / 8, fish.height / 3);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fish.width / 3, -fish.height / 6, fish.width / 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 3, -fish.height / 6, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // オオサンショウウオを描画
+        function drawSalamander(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 2, fish.height / 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 頭部
+            ctx.beginPath();
+            ctx.ellipse(fish.width / 3, 0, fish.width / 5, fish.height / 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 尾
+            ctx.beginPath();
+            ctx.moveTo(-fish.width / 2, 0);
+            
+            // Wiggle effect
+            fish.wiggleOffset += fish.wiggleSpeed;
+            
+            const tailLength = fish.width * 0.8;
+            const tailSegments = 10;
+            
+            for (let i = 0; i <= tailSegments; i++) {
+                const x = -fish.width / 2 - (i / tailSegments) * tailLength;
+                const wiggleY = Math.sin((i / tailSegments) * Math.PI + fish.wiggleOffset) * fish.height / 3;
+                ctx.lineTo(x, wiggleY);
+            }
+            
+            ctx.lineWidth = fish.height / 3;
+            ctx.stroke();
+            
+            // 足
+            for (let i = 0; i < 2; i++) {
+                const x = fish.width / 4 - i * fish.width / 2;
+                const y1 = fish.height / 3;
+                const y2 = -fish.height / 3;
+                
+                // 前足
+                ctx.beginPath();
+                ctx.moveTo(x, y1);
+                ctx.lineTo(x - fish.width / 10, y1 + fish.height / 2);
+                ctx.lineWidth = fish.width / 20;
+                ctx.stroke();
+                
+                // 後ろ足
+                ctx.beginPath();
+                ctx.moveTo(x, y2);
+                ctx.lineTo(x - fish.width / 10, y2 - fish.height / 2);
+                ctx.stroke();
+            }
+            
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 3 + fish.width / 10, -fish.height / 10, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(fish.width / 3 + fish.width / 10, fish.height / 10, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 深海の怪物を描画
+        function drawMonster(fish) {
+            ctx.fillStyle = fish.type.color;
+            
+            // 不規則な体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, fish.width / 2, fish.height / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 触手
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(angle) * fish.width / 2, Math.sin(angle) * fish.height / 2);
+                
+                fish.wiggleOffset += 0.01;
+                const wiggle = Math.sin(fish.wiggleOffset + i) * 10;
+                
+                for (let j = 1; j <= 3; j++) {
+                    const curveX = Math.cos(angle) * (fish.width / 2 + fish.width / 4 * j) + wiggle * (j / 3);
+                    const curveY = Math.sin(angle) * (fish.height / 2 + fish.height / 4 * j);
+                    ctx.lineTo(curveX, curveY);
+                }
+                
+                ctx.lineWidth = fish.width / 15;
+                ctx.stroke();
+            }
+            
+            // 大きな口
+            ctx.beginPath();
+            ctx.arc(0, 0, fish.width / 3, 0, Math.PI);
+            ctx.fillStyle = 'black';
+            ctx.fill();
+            
+            // 鋭い歯
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 10; i++) {
+                const x = (i / 10 - 0.5) * fish.width / 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x - fish.width / 40, fish.height / 6);
+                ctx.lineTo(x + fish.width / 40, fish.height / 6);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // 不気味な目
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(fish.width / 5, -fish.height / 5, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 5, -fish.height / 5, fish.width / 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fish.width / 5, -fish.height / 5, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-fish.width / 5, -fish.height / 5, fish.width / 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // かわいい動物キャラクター（船に乗ったウサギ）を描画
+        function drawFisher() {
+            const fisher = gameState.fisher;
+            
+            // 船を描画
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.ellipse(fisher.x, fisher.y + fisher.height / 2, fisher.width * 0.7, fisher.height * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 船の上部
+            ctx.fillStyle = '#A52A2A';
+            ctx.beginPath();
+            ctx.ellipse(fisher.x, fisher.y + fisher.height / 2, fisher.width * 0.6, fisher.height * 0.2, 0, 0, Math.PI);
+            ctx.fill();
+            
+            // ウサギの体 (丸みを帯びた形)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.ellipse(fisher.x, fisher.y - fisher.height * 0.2, fisher.width * 0.22, fisher.height * 0.25, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // ウサギの頭
+            ctx.beginPath();
+            ctx.arc(fisher.x, fisher.y - fisher.height * 0.45, fisher.width * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 長い耳
+            ctx.beginPath();
+            ctx.ellipse(fisher.x - fisher.width * 0.08, fisher.y - fisher.height * 0.7, fisher.width * 0.05, fisher.height * 0.2, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(fisher.x + fisher.width * 0.08, fisher.y - fisher.height * 0.7, fisher.width * 0.05, fisher.height * 0.2, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 耳の内側はピンク
+            ctx.fillStyle = '#FFB6C1';
+            ctx.beginPath();
+            ctx.ellipse(fisher.x - fisher.width * 0.08, fisher.y - fisher.height * 0.65, fisher.width * 0.03, fisher.height * 0.12, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(fisher.x + fisher.width * 0.08, fisher.y - fisher.height * 0.65, fisher.width * 0.03, fisher.height * 0.12, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(fisher.x - fisher.width * 0.08, fisher.y - fisher.height * 0.48, fisher.width * 0.03, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(fisher.x + fisher.width * 0.08, fisher.y - fisher.height * 0.48, fisher.width * 0.03, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // かわいい目のハイライト
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(fisher.x - fisher.width * 0.07, fisher.y - fisher.height * 0.49, fisher.width * 0.01, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(fisher.x + fisher.width * 0.09, fisher.y - fisher.height * 0.49, fisher.width * 0.01, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // ピンクの鼻
+            ctx.fillStyle = '#FFB6C1';
+            ctx.beginPath();
+            ctx.arc(fisher.x, fisher.y - fisher.height * 0.42, fisher.width * 0.03, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 口（にっこり）
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(fisher.x, fisher.y - fisher.height * 0.38, fisher.width * 0.1, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+            
+            // 頬を少し赤く
+            ctx.fillStyle = 'rgba(255, 182, 193, 0.5)';
+            ctx.beginPath();
+            ctx.arc(fisher.x - fisher.width * 0.15, fisher.y - fisher.height * 0.42, fisher.width * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(fisher.x + fisher.width * 0.15, fisher.y - fisher.height * 0.42, fisher.width * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 腕
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = fisher.width * 0.05;
+            ctx.beginPath();
+            ctx.moveTo(fisher.x + fisher.width * 0.2, fisher.y - fisher.height * 0.3);
+            ctx.lineTo(fisher.x + fisher.width * 0.4, fisher.y - fisher.height * 0.15);
+            ctx.stroke();
+            
+            // 釣り竿
+            if (gameState.activeBait) {
+                // 釣り竿を描画
+                ctx.strokeStyle = '#A0522D';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(fisher.x + fisher.width * 0.4, fisher.y - fisher.height * 0.15);
+                ctx.lineTo(gameState.activeBait.x, gameState.activeBait.y);
+                ctx.stroke();
+            } else {
+                // 釣り竿（餌がない場合）
+                ctx.strokeStyle = '#A0522D';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(fisher.x + fisher.width * 0.4, fisher.y - fisher.height * 0.15);
+                ctx.lineTo(fisher.x + fisher.width * 0.6, fisher.y - fisher.height * 0.3);
+                ctx.stroke();
+            }
+        }
+
+        // 背景を描画
+        function drawBackground() {
+            // 空
+            ctx.fillStyle = 'skyblue';
+            ctx.fillRect(0, 0, canvas.width, gameState.waterLevel);
+            
+            // 太陽
+            ctx.fillStyle = 'yellow';
+            ctx.beginPath();
+            ctx.arc(canvas.width * 0.8, canvas.height * 0.1, 40, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 水面
+            ctx.fillStyle = '#1E90FF';
+            ctx.fillRect(0, gameState.waterLevel, canvas.width, canvas.height - gameState.waterLevel);
+            
+            // 波
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 5; i++) {
+                const y = gameState.waterLevel + i * 20;
+                ctx.beginPath();
+                for (let x = 0; x < canvas.width; x += 50) {
+                    const offsetY = Math.sin(x * 0.02 + Date.now() * 0.001) * 5;
+                    if (x === 0) {
+                        ctx.moveTo(x, y + offsetY);
+                    } else {
+                        ctx.lineTo(x, y + offsetY);
+                    }
+                }
+                ctx.stroke();
+            }
+        }
+
+        // 餌とその検出半径を描画
+        function drawBait() {
+            if (!gameState.activeBait) return;
+            
+            const bait = gameState.activeBait;
+            
+            // 餌の検出半径
+            ctx.beginPath();
+            ctx.arc(bait.x, bait.y, gameState.baitDetectionRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 餌
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.arc(bait.x, bait.y, bait.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // ゲームの更新処理
+        function update(timestamp) {
+            // 時間の差分を計算
+            const deltaTime = (timestamp - gameState.lastTimestamp) / 1000;
+            gameState.lastTimestamp = timestamp;
+            
+            // 魚の数が少なければ追加
+            if (gameState.fishes.length < 15) {
+                gameState.fishes.push(createFish());
+            }
+            
+            // 魚の更新
+            gameState.fishes.forEach(fish => {
+                // 魚を移動
+                fish.x += fish.speed * fish.direction * deltaTime * 60;
+                
+                // 画面外に出たら反対側から再登場
+                if ((fish.direction === 1 && fish.x > canvas.width + fish.width) ||
+                    (fish.direction === -1 && fish.x < -fish.width)) {
+                    fish.x = fish.direction === 1 ? -fish.width : canvas.width + fish.width;
+                    fish.y = Math.random() * (canvas.height - gameState.waterLevel - fish.height) + gameState.waterLevel + fish.height;
+                }
+                
+                // 餌があるか確認
+                if (gameState.activeBait && !gameState.activeBait.falling) {
+                    const distance = Math.sqrt(
+                        Math.pow(fish.x - gameState.activeBait.x, 2) + 
+                        Math.pow(fish.y - gameState.activeBait.y, 2)
+                    );
+                    
+                    // 餌に近づいた魚は捕まえられる状態に
+                    if (distance < gameState.baitDetectionRadius) {
+                        fish.catchable = true;
+                        
+                        // まだ釣っていなければ釣りボタンを表示
+                        if (!gameState.fishingTarget) {
+                            gameState.fishingTarget = fish;
+                            fishingButton.style.display = 'block';
+                        }
+                    } else {
+                        fish.catchable = false;
+                        
+                        // 魚が離れたら釣りボタンを非表示（他の魚が近くにいなければ）
+                        if (gameState.fishingTarget === fish) {
+                            gameState.fishingTarget = null;
+                            fishingButton.style.display = 'none';
+                        }
+                    }
+                }
+            });
+            
+            // 餌の更新
+            if (gameState.activeBait) {
+                if (gameState.activeBait.falling) {
+                    // 餌が落下中
+                    gameState.activeBait.y += gameState.activeBait.speed * deltaTime * 60;
+                    
+                    // 目標地点に到達したらその場で静止
+                    if (gameState.activeBait.y >= gameState.activeBait.targetY) {
+                        gameState.activeBait.y = gameState.activeBait.targetY;
+                        gameState.activeBait.falling = false;
+                    }
+                }
+            }
+            
+            // 描画を更新
+            draw();
+            
+            // ゲームオーバーでなければループを続ける
+            if (!gameState.gameOver) {
+                requestAnimationFrame(update);
+            }
+        }
+
+        // 描画処理
+        function draw() {
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景を描画
+            drawBackground();
+            
+            // 餌を描画
+            drawBait();
+            
+            // 魚を描画
+            gameState.fishes.forEach(fish => {
+                drawFish(fish);
+            });
+            
+            // 釣り人を描画
+            drawFisher();
+        }
+
+        // ダブルクリック/ダブルタップ検出関数
+        function handleClick(e) {
+            e.preventDefault();
+            
+            // タッチイベントまたはマウスイベントからの座標取得
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            
+            const currentTime = new Date().getTime();
+            const isDoubleClick = (currentTime - gameState.lastClickTime) < gameState.doubleClickDelay;
+            gameState.lastClickTime = currentTime;
+            
+            // 水面より下のエリアをクリックした場合のみ餌を投げる
+            if (y > gameState.waterLevel && !gameState.activeBait) {
+                // 単一クリックまたはダブルクリックで餌を投げる
+                throwBait(x, y);
+            }
+            
+            // ダブルクリック/タップで魚を釣り上げる
+            if (isDoubleClick && gameState.fishingTarget) {
+                catchFish();
+            }
+        }
+
+        // イベントリスナーの設定
+        canvas.addEventListener('click', handleClick);
+        canvas.addEventListener('touchstart', handleClick, { passive: false });
+
+        fishingButton.addEventListener('click', catchFish);
+        fishingButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            catchFish();
+        }, { passive: false });
+
+        restartButton.addEventListener('click', restartGame);
+        restartButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            restartGame();
+        }, { passive: false });
+
+        // ゲーム開始
+        requestAnimationFrame(update);
+    </script>
+</body>
+</html>

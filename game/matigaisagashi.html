@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>間違い探しゲーム</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff;
+            touch-action: manipulation;
+        }
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .score {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        .scenes-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .scene {
+            position: relative;
+            width: 100%;
+            height: 40vh;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .object {
+            position: absolute;
+            background-repeat: no-repeat;
+            background-size: contain;
+            cursor: pointer;
+        }
+        .circle {
+            position: absolute;
+            border: 3px solid #e74c3c;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .result {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+        .result h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .result p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        .result button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: #2ecc71;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .result button:hover {
+            background-color: #27ae60;
+        }
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+        .start-screen h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .start-screen p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            max-width: 80%;
+            text-align: center;
+        }
+        .start-screen button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .start-screen button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="start-screen" id="startScreen">
+        <h1>間違い探しゲーム</h1>
+        <p>上下の絵を比較して、5つの違いを見つけましょう！見つけた違いをタップしてください。</p>
+        <button id="startButton">ゲームスタート</button>
+    </div>
+
+    <div class="game-container">
+        <div class="status-bar">
+            <div class="timer" id="timer">残り時間: 60秒</div>
+            <div class="score" id="score">見つけた違い: 0/5</div>
+        </div>
+        
+        <div class="scenes-container">
+            <div class="scene" id="scene1"></div>
+            <div class="scene" id="scene2"></div>
+        </div>
+    </div>
+
+    <div class="result" id="resultScreen">
+        <h2 id="resultTitle">おめでとう！</h2>
+        <p id="resultMessage">すべての違いを見つけました！</p>
+        <button id="restartButton">もう一度プレイ</button>
+    </div>
+
+    <script>
+        const objectTypes = [
+            { name: 'cat', width: 60, height: 40, emoji: '🐱' },
+            { name: 'dog', width: 60, height: 40, emoji: '🐶' },
+            { name: 'rabbit', width: 50, height: 40, emoji: '🐰' },
+            { name: 'frog', width: 40, height: 40, emoji: '🐸' },
+            { name: 'bird', width: 50, height: 40, emoji: '🐦' },
+            { name: 'fox', width: 60, height: 40, emoji: '🦊' },
+            { name: 'panda', width: 60, height: 50, emoji: '🐼' },
+            { name: 'penguin', width: 50, height: 60, emoji: '🐧' },
+            { name: 'koala', width: 50, height: 50, emoji: '🐨' },
+            { name: 'hedgehog', width: 50, height: 40, emoji: '🦔' },
+            { name: 'monkey', width: 50, height: 50, emoji: '🐵' },
+            { name: 'tiger', width: 70, height: 50, emoji: '🐯' },
+            { name: 'lion', width: 70, height: 50, emoji: '🦁' },
+            { name: 'cow', width: 70, height: 50, emoji: '🐮' },
+            { name: 'sheep', width: 60, height: 50, emoji: '🐑' },
+            { name: 'elephant', width: 80, height: 60, emoji: '🐘' },
+            { name: 'giraffe', width: 60, height: 80, emoji: '🦒' },
+            { name: 'butterfly', width: 40, height: 30, emoji: '🦋' },
+            { name: 'bee', width: 40, height: 30, emoji: '🐝' },
+            { name: 'flower', width: 30, height: 40, emoji: '🌸' },
+            { name: 'tree', width: 50, height: 70, emoji: '🌳' },
+            { name: 'house', width: 70, height: 70, emoji: '🏠' },
+            { name: 'car', width: 80, height: 40, emoji: '🚗' },
+            { name: 'balloon', width: 30, height: 40, emoji: '🎈' },
+            { name: 'star', width: 40, height: 40, emoji: '⭐' },
+            { name: 'heart', width: 40, height: 35, emoji: '❤️' },
+            { name: 'gift', width: 40, height: 40, emoji: '🎁' },
+            { name: 'cake', width: 50, height: 40, emoji: '🍰' },
+            { name: 'ice-cream', width: 30, height: 50, emoji: '🍦' },
+            { name: 'pizza', width: 50, height: 50, emoji: '🍕' }
+        ];
+
+        let differences = [];
+        let foundDifferences = 0;
+        let timeLeft = 60;
+        let timer;
+        
+        // ゲーム開始
+        document.getElementById('startButton').addEventListener('click', () => {
+            document.getElementById('startScreen').style.display = 'none';
+            startGame();
+        });
+
+        // リスタートボタン
+        document.getElementById('restartButton').addEventListener('click', () => {
+            document.getElementById('resultScreen').style.display = 'none';
+            startGame();
+        });
+
+        function startGame() {
+            // リセット
+            differences = [];
+            foundDifferences = 0;
+            timeLeft = 60;
+            document.getElementById('score').textContent = `見つけた違い: 0/5`;
+            clearInterval(timer);
+            
+            // シーンをクリア
+            const scene1 = document.getElementById('scene1');
+            const scene2 = document.getElementById('scene2');
+            scene1.innerHTML = '';
+            scene2.innerHTML = '';
+            
+            // オブジェクトを生成
+            const numberOfObjects = Math.floor(Math.random() * 10) + 20; // 20〜30個のオブジェクト
+            
+            for (let i = 0; i < numberOfObjects; i++) {
+                const objectType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+                const x = Math.floor(Math.random() * (scene1.offsetWidth - objectType.width));
+                const y = Math.floor(Math.random() * (scene1.offsetHeight - objectType.height));
+                
+                // 1つ目のシーンにオブジェクト追加
+                const obj1 = document.createElement('div');
+                obj1.className = 'object';
+                obj1.textContent = objectType.emoji;
+                obj1.style.left = `${x}px`;
+                obj1.style.top = `${y}px`;
+                obj1.style.width = `${objectType.width}px`;
+                obj1.style.height = `${objectType.height}px`;
+                obj1.style.fontSize = `${Math.min(objectType.width, objectType.height) * 0.8}px`;
+                obj1.style.display = 'flex';
+                obj1.style.justifyContent = 'center';
+                obj1.style.alignItems = 'center';
+                scene1.appendChild(obj1);
+                
+                // 2つ目のシーンにも同じオブジェクトを追加
+                const obj2 = obj1.cloneNode(true);
+                scene2.appendChild(obj2);
+            }
+            
+            // 違いを5つ生成
+            generateDifferences(5);
+            
+            // タイマー開始
+            updateTimer();
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        function generateDifferences(count) {
+            const scene1 = document.getElementById('scene1');
+            const scene2 = document.getElementById('scene2');
+            const objects1 = Array.from(scene1.getElementsByClassName('object'));
+            const objects2 = Array.from(scene2.getElementsByClassName('object'));
+            
+            // ランダムに違いを作る
+            const diffOptions = [
+                'remove', // オブジェクトを削除
+                'move',   // オブジェクトを移動
+                'resize', // オブジェクトのサイズ変更
+                'change', // オブジェクトの種類を変更
+                'add'     // 新しいオブジェクトを追加
+            ];
+            
+            for (let i = 0; i < count; i++) {
+                const diffType = diffOptions[Math.floor(Math.random() * diffOptions.length)];
+                let diffObj, originalObj;
+                
+                switch (diffType) {
+                    case 'remove':
+                        if (objects2.length > 0) {
+                            const indexToRemove = Math.floor(Math.random() * objects2.length);
+                            originalObj = objects1[indexToRemove];
+                            diffObj = objects2[indexToRemove];
+                            
+                            // 位置情報を保存
+                            const rect = diffObj.getBoundingClientRect();
+                            const sceneRect = scene2.getBoundingClientRect();
+                            
+                            differences.push({
+                                x: rect.left - sceneRect.left + rect.width / 2,
+                                y: rect.top - sceneRect.top + rect.height / 2,
+                                radius: Math.max(rect.width, rect.height) / 2,
+                                object: diffObj,
+                                originalObject: originalObj,
+                                type: 'remove'
+                            });
+                            
+                            diffObj.style.visibility = 'hidden';
+                        }
+                        break;
+                        
+                    case 'move':
+                        if (objects2.length > 0) {
+                            const indexToMove = Math.floor(Math.random() * objects2.length);
+                            originalObj = objects1[indexToMove];
+                            diffObj = objects2[indexToMove];
+                            
+                            const newX = Math.floor(Math.random() * (scene2.offsetWidth - parseInt(diffObj.style.width)));
+                            const newY = Math.floor(Math.random() * (scene2.offsetHeight - parseInt(diffObj.style.height)));
+                            
+                            // 位置情報を保存（元の位置と新しい位置）
+                            const originalRect = originalObj.getBoundingClientRect();
+                            const sceneRect = scene2.getBoundingClientRect();
+                            
+                            differences.push({
+                                x: newX + parseInt(diffObj.style.width) / 2,
+                                y: newY + parseInt(diffObj.style.height) / 2,
+                                radius: Math.max(parseInt(diffObj.style.width), parseInt(diffObj.style.height)) / 2,
+                                object: diffObj,
+                                originalObject: originalObj,
+                                type: 'move'
+                            });
+                            
+                            diffObj.style.left = `${newX}px`;
+                            diffObj.style.top = `${newY}px`;
+                        }
+                        break;
+                        
+                    case 'resize':
+                        if (objects2.length > 0) {
+                            const indexToResize = Math.floor(Math.random() * objects2.length);
+                            originalObj = objects1[indexToResize];
+                            diffObj = objects2[indexToResize];
+                            
+                            const scaleFactor = 0.6 + Math.random() * 0.8; // 0.6〜1.4倍
+                            const newWidth = parseInt(diffObj.style.width) * scaleFactor;
+                            const newHeight = parseInt(diffObj.style.height) * scaleFactor;
+                            
+                            // 位置情報を保存
+                            const rect = diffObj.getBoundingClientRect();
+                            const sceneRect = scene2.getBoundingClientRect();
+                            
+                            differences.push({
+                                x: rect.left - sceneRect.left + newWidth / 2,
+                                y: rect.top - sceneRect.top + newHeight / 2,
+                                radius: Math.max(newWidth, newHeight) / 2,
+                                object: diffObj,
+                                originalObject: originalObj,
+                                type: 'resize'
+                            });
+                            
+                            diffObj.style.width = `${newWidth}px`;
+                            diffObj.style.height = `${newHeight}px`;
+                            diffObj.style.fontSize = `${Math.min(newWidth, newHeight) * 0.8}px`;
+                        }
+                        break;
+                        
+                    case 'change':
+                        if (objects2.length > 0) {
+                            const indexToChange = Math.floor(Math.random() * objects2.length);
+                            originalObj = objects1[indexToChange];
+                            diffObj = objects2[indexToChange];
+                            
+                            const newObjectType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+                            
+                            // 位置情報を保存
+                            const rect = diffObj.getBoundingClientRect();
+                            const sceneRect = scene2.getBoundingClientRect();
+                            
+                            differences.push({
+                                x: rect.left - sceneRect.left + rect.width / 2,
+                                y: rect.top - sceneRect.top + rect.height / 2,
+                                radius: Math.max(rect.width, rect.height) / 2,
+                                object: diffObj,
+                                originalObject: originalObj,
+                                type: 'change'
+                            });
+                            
+                            diffObj.textContent = newObjectType.emoji;
+                        }
+                        break;
+                        
+                    case 'add':
+                        const objectType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+                        const x = Math.floor(Math.random() * (scene2.offsetWidth - objectType.width));
+                        const y = Math.floor(Math.random() * (scene2.offsetHeight - objectType.height));
+                        
+                        const newObj = document.createElement('div');
+                        newObj.className = 'object';
+                        newObj.textContent = objectType.emoji;
+                        newObj.style.left = `${x}px`;
+                        newObj.style.top = `${y}px`;
+                        newObj.style.width = `${objectType.width}px`;
+                        newObj.style.height = `${objectType.height}px`;
+                        newObj.style.fontSize = `${Math.min(objectType.width, objectType.height) * 0.8}px`;
+                        newObj.style.display = 'flex';
+                        newObj.style.justifyContent = 'center';
+                        newObj.style.alignItems = 'center';
+                        scene2.appendChild(newObj);
+                        
+                        differences.push({
+                            x: x + objectType.width / 2,
+                            y: y + objectType.height / 2,
+                            radius: Math.max(objectType.width, objectType.height) / 2,
+                            object: newObj,
+                            originalObject: null,
+                            type: 'add'
+                        });
+                        break;
+                }
+            }
+            
+            // クリックイベント追加
+            scene1.addEventListener('click', handleClick);
+            scene2.addEventListener('click', handleClick);
+            
+            // タッチイベント追加（スマホ対応）
+            scene1.addEventListener('touchstart', handleTouch);
+            scene2.addEventListener('touchstart', handleTouch);
+        }
+
+        function handleClick(event) {
+            event.preventDefault();
+            const scene = event.currentTarget;
+            const rect = scene.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            checkForDifference(scene, x, y);
+        }
+        
+        function handleTouch(event) {
+            event.preventDefault();
+            const scene = event.currentTarget;
+            const rect = scene.getBoundingClientRect();
+            const touch = event.touches[0];
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            checkForDifference(scene, x, y);
+        }
+        
+        function checkForDifference(scene, x, y) {
+            // スクロールを考慮した座標計算
+            const sceneId = scene.id;
+            
+            for (let i = 0; i < differences.length; i++) {
+                const diff = differences[i];
+                // 対象のシーンによって座標を調整
+                let diffX, diffY;
+                if (sceneId === 'scene1' && diff.originalObject) {
+                    // scene1での座標を取得
+                    const rect = diff.originalObject.getBoundingClientRect();
+                    const sceneRect = scene.getBoundingClientRect();
+                    diffX = rect.left - sceneRect.left + rect.width / 2;
+                    diffY = rect.top - sceneRect.top + rect.height / 2;
+                } else {
+                    diffX = diff.x;
+                    diffY = diff.y;
+                }
+                
+                const distance = Math.sqrt(Math.pow(x - diffX, 2) + Math.pow(y - diffY, 2));
+                
+                if (distance <= diff.radius * 1.5 && !diff.found) { // 検出範囲を少し広げる
+                    // 違いを見つけた
+                    diff.found = true;
+                    foundDifferences++;
+                    
+                    // 円を表示（scene1）
+                    const scene1 = document.getElementById('scene1');
+                    const circle1 = document.createElement('div');
+                    circle1.className = 'circle';
+                    
+                    if (diff.originalObject) {
+                        const rect = diff.originalObject.getBoundingClientRect();
+                        const sceneRect = scene1.getBoundingClientRect();
+                        const centerX = rect.left - sceneRect.left + rect.width / 2;
+                        const centerY = rect.top - sceneRect.top + rect.height / 2;
+                        const radius = Math.max(rect.width, rect.height) / 2;
+                        
+                        circle1.style.left = `${centerX - radius}px`;
+                        circle1.style.top = `${centerY - radius}px`;
+                        circle1.style.width = `${radius * 2}px`;
+                        circle1.style.height = `${radius * 2}px`;
+                        scene1.appendChild(circle1);
+                    }
+                    
+                    // 円を表示（scene2）
+                    const scene2 = document.getElementById('scene2');
+                    const circle2 = document.createElement('div');
+                    circle2.className = 'circle';
+                    circle2.style.left = `${diff.x - diff.radius}px`;
+                    circle2.style.top = `${diff.y - diff.radius}px`;
+                    circle2.style.width = `${diff.radius * 2}px`;
+                    circle2.style.height = `${diff.radius * 2}px`;
+                    scene2.appendChild(circle2);
+                    
+                    // スコア更新
+                    document.getElementById('score').textContent = `見つけた違い: ${foundDifferences}/5`;
+                    
+                    // すべての違いを見つけたかチェック
+                    if (foundDifferences >= 5) {
+                        clearInterval(timer);
+                        document.getElementById('resultTitle').textContent = 'おめでとう！';
+                        document.getElementById('resultMessage').textContent = `すべての違いを見つけました！残り時間: ${timeLeft}秒`;
+                        document.getElementById('resultScreen').style.display = 'flex';
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById('timer').textContent = `残り時間: ${timeLeft}秒`;
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                document.getElementById('resultTitle').textContent = 'タイムアップ！';
+                document.getElementById('resultMessage').textContent = `見つけた違い: ${foundDifferences}/5`;
+                document.getElementById('resultScreen').style.display = 'flex';
+            }
+        }
+    </script>
+</body>
+</html>

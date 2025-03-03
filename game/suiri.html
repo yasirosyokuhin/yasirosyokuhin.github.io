@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推理パズルゲーム</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        
+        .game-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .story, .question {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .clues {
+            margin-bottom: 20px;
+        }
+        
+        .clue {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .clue:hover {
+            background-color: #d1e7f0;
+        }
+        
+        .clue.revealed {
+            background-color: #d1e7f0;
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .option {
+            padding: 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .option:hover {
+            background-color: #2980b9;
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .next-puzzle, .restart {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .next-puzzle:hover, .restart:hover {
+            background-color: #27ae60;
+        }
+        
+        .progress {
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+        
+        @media (min-width: 600px) {
+            .options {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>推理パズルゲーム</h1>
+    
+    <div class="progress" id="progress"></div>
+    
+    <div class="game-container">
+        <div class="story" id="story"></div>
+        <div class="question" id="question"></div>
+        
+        <div class="clues" id="clues"></div>
+        
+        <div class="options" id="options"></div>
+        
+        <div class="feedback" id="feedback"></div>
+        
+        <button class="next-puzzle" id="next-puzzle" style="display: none;">次のパズルへ</button>
+        <button class="restart" id="restart" style="display: none;">最初からやり直す</button>
+    </div>
+
+    <script>
+        const puzzles = [
+            {
+                story: "ある金曜日の夜、山田さんは自宅で殺害されました。警察は4人の容疑者を特定しましたが、それぞれにアリバイがあります。",
+                question: "誰が犯人でしょうか？",
+                clues: [
+                    "佐藤さんは「午後8時から10時まで友人と映画を見ていた」と証言しています。",
+                    "田中さんは「午後7時から9時まで残業していた」と言っていますが、会社の警備員は彼が午後8時には帰ったと証言しています。",
+                    "鈴木さんは「午後9時から自宅で寝ていた」と言っていますが、証明する人はいません。",
+                    "高橋さんは「午後8時から10時までジムにいた」と言っており、ジムのセキュリティカメラがそれを証明しています。",
+                    "検死官によると、山田さんの死亡時刻は午後8時30分から9時の間と推定されています。"
+                ],
+                options: [
+                    "佐藤さん",
+                    "田中さん",
+                    "鈴木さん",
+                    "高橋さん"
+                ],
+                correctAnswer: 1,
+                explanation: "田中さんのアリバイには矛盾があります。彼は午後7時から9時まで仕事をしていたと主張していますが、警備員は彼が午後8時に退社したと証言しています。死亡時刻は午後8時30分から9時の間なので、田中さんは犯行現場にいることが可能でした。"
+            },
+            {
+                story: "博物館から貴重な宝石が盗まれました。盗難が発生したのは火曜日の深夜で、警備システムは何も検知しませんでした。犯行現場には3つの手がかりが残されていました。",
+                question: "誰が宝石を盗んだのでしょうか？",
+                clues: [
+                    "現場に残された手がかり1: 警備員専用の鍵が使われた形跡がある。",
+                    "現場に残された手がかり2: 監視カメラには何も映っていなかった。",
+                    "現場に残された手がかり3: 博物館の警報システムは作動しなかった。",
+                    "青木警備員は「その日は休みだった」と証言している。",
+                    "中村警備員は「深夜2時に巡回したが異常はなかった」と証言している。",
+                    "小林警備員は「深夜に体調不良で30分ほど休憩室にいた」と証言している。",
+                    "大山館長は「閉館後、最後に展示室をチェックした」と証言している。"
+                ],
+                options: [
+                    "青木警備員",
+                    "中村警備員",
+                    "小林警備員",
+                    "大山館長"
+                ],
+                correctAnswer: 2,
+                explanation: "小林警備員が犯人です。彼は「体調不良で休憩室にいた」と証言していますが、これは宝石を盗む時間を作るための言い訳です。警備員の鍵が使われたこと、警報システムが作動しなかったこと、監視カメラに映っていないことから、内部犯行であることが分かります。小林警備員は当直していて、警備システムの知識があり、「休憩」している間に犯行を行ったと考えられます。"
+            },
+            {
+                story: "会社のオフィスからノートパソコンが盗まれました。盗難が発生したのは月曜日の昼休み時間中（12:00〜13:00）です。その時間帯、ほとんどの社員は社外に昼食を取りに出かけていましたが、4人の社員がオフィス内にいたと確認されています。",
+                question: "誰がノートパソコンを盗んだのでしょうか？",
+                clues: [
+                    "受付の記録によると、昼休み中にオフィスに入った外部の人間はいません。",
+                    "伊藤さんは12:00から12:45までオフィスの会議室で電話会議をしていました。会議の参加者が確認しています。",
+                    "吉田さんは12:15から12:50までオフィスの自分のデスクで昼食を取っていました。同じエリアにいた清掃スタッフがそれを確認しています。",
+                    "渡辺さんは12:00から12:30までコピー機で大量の資料をコピーしていました。その後、12:30から13:00まで自分のデスクで作業していたと言っていますが、それを確認した人はいません。",
+                    "加藤さんは12:00から12:20までオフィスのキッチンでコーヒーを入れ、その後自分のデスクに戻ったと証言しています。彼女のデスクはパソコンが盗まれた部屋の反対側にあります。",
+                    "盗まれたノートパソコンは12:30頃までデスクにあったことが、その時間にそのエリアを通りかかった同僚によって確認されています。"
+                ],
+                options: [
+                    "伊藤さん",
+                    "吉田さん",
+                    "渡辺さん",
+                    "加藤さん"
+                ],
+                correctAnswer: 3,
+                explanation: "加藤さんが犯人です。彼女は12:20以降の自分の行動について具体的なアリバイを提供していません。また、彼女のデスクがパソコンが盗まれた部屋の反対側にあるという情報は、彼女が自分のデスクにいなかったことを覚えられにくくするための言い訳である可能性があります。ノートパソコンは12:30頃まではデスクにあったことが確認されているため、12:20以降に加藤さんがパソコンを盗んだと考えられます。"
+            }
+        ];
+
+        let currentPuzzleIndex = 0;
+        let revealedClues = 0;
+
+        function loadPuzzle(index) {
+            const puzzle = puzzles[index];
+            document.getElementById('story').textContent = puzzle.story;
+            document.getElementById('question').textContent = puzzle.question;
+            
+            // クリアして再設定
+            const cluesContainer = document.getElementById('clues');
+            cluesContainer.innerHTML = '<h3>手がかり (クリックで表示)</h3>';
+            
+            revealedClues = 0;
+            
+            puzzle.clues.forEach((clue, i) => {
+                const clueElement = document.createElement('div');
+                clueElement.className = 'clue';
+                clueElement.textContent = `手がかり ${i+1} (クリックして表示)`;
+                clueElement.dataset.clue = clue;
+                clueElement.addEventListener('click', function() {
+                    if (!this.classList.contains('revealed')) {
+                        this.textContent = clue;
+                        this.classList.add('revealed');
+                        revealedClues++;
+                    }
+                });
+                cluesContainer.appendChild(clueElement);
+            });
+            
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            
+            puzzle.options.forEach((option, i) => {
+                const button = document.createElement('button');
+                button.className = 'option';
+                button.textContent = option;
+                button.addEventListener('click', function() {
+                    checkAnswer(i);
+                });
+                optionsContainer.appendChild(button);
+            });
+            
+            document.getElementById('feedback').style.display = 'none';
+            document.getElementById('next-puzzle').style.display = 'none';
+            document.getElementById('restart').style.display = 'none';
+            
+            updateProgress();
+        }
+        
+        function checkAnswer(selectedIndex) {
+            const puzzle = puzzles[currentPuzzleIndex];
+            const feedbackElement = document.getElementById('feedback');
+            
+            feedbackElement.style.display = 'block';
+            
+            if (selectedIndex === puzzle.correctAnswer) {
+                feedbackElement.className = 'feedback correct';
+                feedbackElement.innerHTML = '<h3>正解！</h3><p>' + puzzle.explanation + '</p>';
+                
+                if (currentPuzzleIndex < puzzles.length - 1) {
+                    document.getElementById('next-puzzle').style.display = 'block';
+                } else {
+                    feedbackElement.innerHTML += '<p>おめでとうございます！すべてのパズルを解きました。</p>';
+                    document.getElementById('restart').style.display = 'block';
+                }
+            } else {
+                feedbackElement.className = 'feedback incorrect';
+                feedbackElement.innerHTML = '<h3>不正解</h3><p>もう一度考えてみましょう。もっと手がかりを確認してみてください。</p>';
+            }
+            
+            // すべての手がかりを表示
+            document.querySelectorAll('.clue').forEach(clue => {
+                if (!clue.classList.contains('revealed')) {
+                    clue.textContent = clue.dataset.clue;
+                    clue.classList.add('revealed');
+                }
+            });
+        }
+        
+        function updateProgress() {
+            document.getElementById('progress').textContent = `パズル ${currentPuzzleIndex + 1} / ${puzzles.length}`;
+        }
+        
+        document.getElementById('next-puzzle').addEventListener('click', function() {
+            currentPuzzleIndex++;
+            loadPuzzle(currentPuzzleIndex);
+        });
+        
+        document.getElementById('restart').addEventListener('click', function() {
+            currentPuzzleIndex = 0;
+            loadPuzzle(currentPuzzleIndex);
+        });
+        
+        // 最初のパズルをロード
+        loadPuzzle(currentPuzzleIndex);
+    </script>
+</body>
+</html>

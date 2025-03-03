@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Piccadilly Circus Roulette</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f0f0f0;
+                text-align: center;
+            }
+            
+            .game-container {
+                max-width: 600px;
+                margin: 0 auto;
+                background-color: #0047AB; /* 濃い青色の背景 */
+                border-radius: 10px;
+                padding: 20px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+                border: 5px solid #00BFFF; /* 水色の境界線 */
+            }
+            
+            .title {
+                color: white;
+                font-size: 28px;
+                font-weight: bold;
+                background-color: #CC0000; /* 明るい赤色 */
+                padding: 10px;
+                border-radius: 5px 5px 0 0;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+                letter-spacing: 1px;
+                font-style: italic;
+            }
+            
+            .roulette-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    max-width: 300px;
+    margin: 20px auto;
+    background-color: #00008B; /* 濃紺色 */
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #1a237e;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    /* 以下を追加: 白い外枠を作成するためのoutlineプロパティ */
+    outline: 2px solid white;
+    outline-offset: 2px;
+}
+            
+            .roulette-wheel {
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                position: relative;
+                background: linear-gradient(to right, #00008B, #0047AB, #00008B); /* 青系グラデーション */
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            
+            .roulette-center {
+                position: absolute;
+                width: 30%;
+                height: 30%;
+                background: radial-gradient(circle, #FF0000, #AA0000); /* 赤いグラデーション */
+                border-radius: 50%;
+                z-index: 2;
+                border: 3px solid #CC0000;
+            }
+            
+            .roulette-numbers {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background-color: transparent;
+                z-index: 1;
+            }
+            
+            .number {
+                position: absolute;
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+                z-index: 2;
+                border-radius: 50%;
+                transition: box-shadow 0.3s, transform 0.3s;
+            }
+            
+            .number.highlighted {
+                box-shadow: 0 0 15px orange, 0 0 5px white;
+                transform: scale(1.1);
+                border: 2px solid orange;
+            }
+            
+            .number.selected {
+                box-shadow: 0 0 15px yellow, 0 0 5px white;
+                animation: pulse 0.6s infinite alternate;
+                text-shadow: 0 0 5px white;
+                font-weight: bold;
+                border: 2px solid yellow;
+            }
+            
+            .bet-container {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 5px;
+                margin: 20px auto;
+                max-width: 500px;
+            }
+            
+            .bet-column {
+                display: flex;
+                flex-direction: column;
+                background-color: #0047AB; /* 濃い青色 */
+                border-radius: 5px;
+                overflow: hidden;
+            }
+
+            .bet-column button {
+    background-color: white;
+    color: black;
+    border: 1px solid #0047AB;
+    border-radius: 3px;
+    padding: 5px 0;
+    font-weight: bold;
+}
+            
+            .bet-number {
+                background-color: #3498db;
+                color: white;
+                font-weight: bold;
+                padding: 10px 0;
+            }
+            
+            .bet-value {
+                padding: 2px 0;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                background-color: #87CEEB; /* 淡い青色 */
+                color: black;
+                font-weight: bold;
+                border: 1px solid #0047AB;
+                margin: 1px;
+                border-radius: 3px;
+            }
+            
+            .bet-value.active {
+                background-color: #f39c12;
+                color: white;
+                font-weight: bold;
+            }
+            
+            .controls {
+                margin-top: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .number-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 5px;
+                flex-wrap: nowrap;
+                width: 100%;
+            }
+            
+            .number-buttons button {
+                flex: 1;
+                min-width: 0;
+                padding: 12px 0;
+            }
+            
+            button {
+                background-color: #87CEEB; /* 淡い青色 */
+                color: black;
+                border: none;
+                padding: 12px 25px;
+                font-size: 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                font-weight: bold;
+            }
+            
+            button:hover {
+                background-color: #1E90FF; /* 深い青色 */
+                color: white;
+            }
+            
+            button:disabled {
+                background-color: #95a5a6;
+                cursor: not-allowed;
+            }
+            
+            #start-button {
+                background-color: #87CEEB; /* 淡い青色 */
+                color: black;
+            }
+            
+            #reset-button {
+                background-color: #87CEEB; /* 淡い青色 */
+                color: black;
+            }
+            
+            .status {
+                margin-top: 20px;
+                font-size: 18px;
+                font-weight: bold;
+                color: white;
+            }
+            
+            .win-message {
+                color: #FFFF00; /* 黄色 */
+                font-size: 24px;
+                margin-top: 10px;
+                animation: pulse 1s infinite;
+                text-shadow: 0 0 5px #FF0000;
+            }
+            
+            .lose-message {
+                color: #FF6347; /* トマト色 */
+                font-size: 20px;
+                margin-top: 10px;
+            }
+            
+            .clear-message {
+                color: #f1c40f;
+                font-size: 28px;
+                margin-top: 10px;
+                animation: pulse 1s infinite;
+            }
+            
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+            
+            /* スマホ表示時に数字の円を小さくする */
+            @media (max-width: 600px) {
+    .bet-container {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 3px;
+    }
+    
+ 
+    
+    .number-buttons {
+        gap: 3px;
+    }
+    
+    button {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    /* 数字の周りの円を小さくする */
+    .number {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+    }
+}
+        </style>
+    </head>
+<body>
+    <div class="game-container">
+        <div class="title">PICCADILLY CIRCUS</div>
+        
+        <div class="roulette-container">
+            <div class="roulette-wheel" id="wheel">
+                <div class="roulette-center"></div>
+                <div class="roulette-numbers" id="numbers"></div>
+            </div>
+        </div>
+        
+        <div class="status">
+            <div>コイン: <span id="coins">50</span>枚</div>
+            <div id="result-message"></div>
+        </div>
+        
+        <div class="bet-container">
+            <div class="bet-column">
+                <div class="bet-value" data-number="2" data-multiplier="8">8</div>
+                <div class="bet-value" data-number="2" data-multiplier="6">6</div>
+                <div class="bet-value" data-number="2" data-multiplier="4">4</div>
+                <div class="bet-value" data-number="2" data-multiplier="2">2</div>
+                <button id="bet-2">2</button>
+            </div>
+            <div class="bet-column">
+                <div class="bet-value" data-number="4" data-multiplier="16">16</div>
+                <div class="bet-value" data-number="4" data-multiplier="12">12</div>
+                <div class="bet-value" data-number="4" data-multiplier="8">8</div>
+                <div class="bet-value" data-number="4" data-multiplier="4">4</div>
+                <button id="bet-4">4</button>
+            </div>
+            <div class="bet-column">
+                <div class="bet-value" data-number="6" data-multiplier="24">24</div>
+                <div class="bet-value" data-number="6" data-multiplier="18">18</div>
+                <div class="bet-value" data-number="6" data-multiplier="12">12</div>
+                <div class="bet-value" data-number="6" data-multiplier="6">6</div>
+                <button id="bet-6">6</button>
+            </div>
+            <div class="bet-column">
+                <div class="bet-value" data-number="10" data-multiplier="40">40</div>
+                <div class="bet-value" data-number="10" data-multiplier="30">30</div>
+                <div class="bet-value" data-number="10" data-multiplier="20">20</div>
+                <div class="bet-value" data-number="10" data-multiplier="10">10</div>
+                <button id="bet-10">10</button>
+            </div>
+            <div class="bet-column">
+                <div class="bet-value" data-number="30" data-multiplier="120">120</div>
+                <div class="bet-value" data-number="30" data-multiplier="90">90</div>
+                <div class="bet-value" data-number="30" data-multiplier="60">60</div>
+                <div class="bet-value" data-number="30" data-multiplier="30">30</div>
+                <button id="bet-30">30</button>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="start-button">スタート</button>
+            <button id="reset-button">リセット</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初期化
+            let coins = 50;
+            let bets = {};
+            let spinning = false;
+            let betLevel = {};
+            const WINNING_THRESHOLD = 100;
+            
+            // 要素の取得
+            const wheel = document.getElementById('wheel');
+            const numbersContainer = document.getElementById('numbers');
+            const coinsDisplay = document.getElementById('coins');
+            const resultMessage = document.getElementById('result-message');
+            const startButton = document.getElementById('start-button');
+            const resetButton = document.getElementById('reset-button');
+            const betButtons = {
+                2: document.getElementById('bet-2'),
+                4: document.getElementById('bet-4'),
+                6: document.getElementById('bet-6'),
+                10: document.getElementById('bet-10'),
+                30: document.getElementById('bet-30')
+            };
+            
+            // ルーレットの数字配列を分散させる (0が2つ、2が10つ、4が7つ、6が5つ、10が3つ、30が1つ)
+            const rouletteNumbers = [];
+            
+            // ランダムに分散させた配列を作成
+            function shuffleArray(array) {
+                const newArray = [...array];
+                for (let i = newArray.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                }
+                return newArray;
+            }
+            
+            // 基本の数値を用意
+            const baseNumbers = [
+                0, 0,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                4, 4, 4, 4, 4, 4, 4,
+                6, 6, 6, 6, 6,
+                10, 10, 10,
+                30
+            ];
+            
+            // 分散された配列を作成 (同じ数字が連続しないようにする)
+            function distributeNumbers() {
+                // 最初はシャッフルしたものを使用
+                let shuffled = shuffleArray(baseNumbers);
+                
+                // 同じ数字が連続していないか確認し、連続していれば調整
+                for (let i = 0; i < shuffled.length - 1; i++) {
+                    if (shuffled[i] === shuffled[i + 1]) {
+                        // 連続していたら、i+1以降で異なる値を持つインデックスを探す
+                        for (let j = i + 2; j < shuffled.length; j++) {
+                            if (shuffled[i] !== shuffled[j]) {
+                                // 見つかったら交換
+                                [shuffled[i + 1], shuffled[j]] = [shuffled[j], shuffled[i + 1]];
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                return shuffled;
+            }
+            
+            // ルーレットの数字を表示
+            function setupRouletteNumbers() {
+                numbersContainer.innerHTML = '';
+                rouletteNumbers.length = 0;
+                
+                // 分散配置した数字を設定
+                const distributedNumbers = distributeNumbers();
+                rouletteNumbers.push(...distributedNumbers);
+                
+                const total = rouletteNumbers.length;
+                const radius = wheel.offsetWidth / 2 * 0.9; // 半径を調整
+                const centerX = wheel.offsetWidth / 2;
+                const centerY = wheel.offsetHeight / 2;
+                
+                rouletteNumbers.forEach((number, index) => {
+                    const angle = (index / total) * 2 * Math.PI;
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+                    
+                    const numberElement = document.createElement('div');
+                    numberElement.className = 'number';
+                    numberElement.textContent = number;
+                    numberElement.style.left = `${x - 15}px`; // 数字の幅の半分を引く
+                    numberElement.style.top = `${y - 15}px`; // 数字の高さの半分を引く
+                    numberElement.dataset.index = index;
+                    
+                    // 背景色を設定
+                    if (number === 0) {
+                        // 0は深緑の背景
+                        numberElement.style.backgroundColor = "#1b5e20";
+                    } else {
+                        // 赤と黒の交互
+                        numberElement.style.backgroundColor = index % 2 === 0 ? "#e53935" : "#212121";
+                    }
+                    
+                    numbersContainer.appendChild(numberElement);
+                });
+            }
+            
+            // ベットボタンのイベント設定
+            Object.keys(betButtons).forEach(number => {
+                betButtons[number].addEventListener('click', function() {
+                    if (spinning) return;
+                    
+                    // 現在のベットレベルを取得または初期化
+                    if (!betLevel[number]) {
+                        betLevel[number] = 0;
+                    }
+                    
+                    // 最大ベット制限のチェック
+                    if (betLevel[number] >= 4) {
+                        // 既に最大ベット額に達している場合は何もしない
+                        return;
+                    }
+                    
+                    // コインを減らす
+                    if (coins >= 1) {
+                        coins -= 1;
+                        coinsDisplay.textContent = coins;
+                        
+                        // ベットレベルを上げる
+                        betLevel[number]++;
+                        bets[number] = betLevel[number];
+                        
+                        // アクティブなクラスを設定（下から色をつける）
+                        const betElements = document.querySelectorAll(`.bet-value[data-number="${number}"]`);
+                        const maxIndex = betElements.length - 1;
+                        
+                        betElements.forEach((el, index) => {
+                            if (maxIndex - index < betLevel[number]) {
+                                el.classList.add('active');
+                            } else {
+                                el.classList.remove('active');
+                            }
+                        });
+
+                        // 最大ベット額に達したらボタンを無効化
+                        if (betLevel[number] >= 4) {
+                            this.disabled = true;
+                            this.style.opacity = "0.5";
+                        }
+                    } else {
+                        // コインが足りない場合
+                        alert('コインが足りません！');
+                    }
+                });
+            });
+            
+            // スタートボタンのイベント
+            startButton.addEventListener('click', function() {
+                if (spinning) return;
+                
+                const totalBets = Object.values(bets).reduce((acc, bet) => acc + bet, 0);
+                
+                if (totalBets === 0) {
+                    alert('少なくとも1つの数字にベットしてください！');
+                    return;
+                }
+                
+                spinning = true;
+                startButton.disabled = true;
+                resultMessage.textContent = '';
+                
+                // ルーレットを回す
+                spinRoulette();
+            });
+            
+            // リセットボタンのイベント
+            resetButton.addEventListener('click', function() {
+                if (spinning) return;
+                
+                resetGame();
+            });
+            
+            // ゲームをリセット
+            function resetGame() {
+                bets = {};
+                betLevel = {};
+                document.querySelectorAll('.bet-value.active').forEach(el => {
+                    el.classList.remove('active');
+                });
+                resultMessage.textContent = '';
+                startButton.disabled = false;
+                
+                // ベットボタンの不透明度とdisabledをリセット
+                Object.values(betButtons).forEach(button => {
+                    button.disabled = false;
+                    button.style.opacity = "1";
+                });
+                
+                // アクティブなナンバーをリセット
+                document.querySelectorAll('.number').forEach(el => {
+                    el.classList.remove('highlighted');
+                    el.classList.remove('selected');
+                });
+            }
+            
+            // 数字を順に強調表示するアニメーション
+            function animateNumbers(finalIndex) {
+                const numbers = document.querySelectorAll('.number');
+                const totalNumbers = numbers.length;
+                let currentIndex = 0;
+                let rounds = 0;
+                const maxRounds = 2; // 回転回数
+                const animationSpeed = 50; // ミリ秒単位の速度
+                
+                function highlightNumber() {
+                    // すべての数字から強調表示を削除
+                    numbers.forEach(number => number.classList.remove('highlighted'));
+                    
+                    // 現在のインデックスの数字を強調表示
+                    numbers[currentIndex].classList.add('highlighted');
+                    
+                    // 次のインデックスに移動
+                    currentIndex = (currentIndex + 1) % totalNumbers;
+                    
+                    // 一周したらラウンドを増やす
+                    if (currentIndex === 0) {
+                        rounds++;
+                    }
+                    
+                    // 指定した回数以上回転し、かつfinalIndexに達したら停止
+                    if (rounds >= maxRounds && currentIndex === finalIndex) {
+                        // すべての数字から強調表示を削除
+                        numbers.forEach(number => number.classList.remove('highlighted'));
+                        
+                        // 最終的なインデックスの数字を選択状態に
+                        numbers[finalIndex].classList.add('selected');
+                        
+                        // 数秒後に結果処理
+                        setTimeout(() => {
+                            handleResult(rouletteNumbers[finalIndex]);
+                        }, 600);
+                        
+                        return;
+                    }
+                    
+                    // アニメーション継続
+                    setTimeout(highlightNumber, animationSpeed);
+                }
+                
+                // アニメーション開始
+                highlightNumber();
+            }
+            
+            // ルーレットを回す
+            function spinRoulette() {
+                // ランダムな結果を決定
+                const randomIndex = Math.floor(Math.random() * rouletteNumbers.length);
+                
+                // 数字を順に強調表示するアニメーション
+                animateNumbers(randomIndex);
+            }
+            
+            // 結果の処理
+            function handleResult(result) {
+                let wonAmount = 0;
+                
+                // ベットした数字に一致するか確認
+                for (const [betNumber, betValue] of Object.entries(bets)) {
+                    if (parseInt(betNumber) === result && betValue > 0) {
+                        // 勝ち金を計算
+                        const multiplier = getMultiplierForBet(betNumber, betValue);
+                        wonAmount += multiplier;
+                    }
+                }
+                
+                // 結果を表示
+                if (wonAmount > 0) {
+                    coins += wonAmount;
+                    coinsDisplay.textContent = coins;
+                    resultMessage.innerHTML = `<div class="win-message">当たり！${wonAmount}獲得！</div>`;
+                } else {
+                    resultMessage.innerHTML = `<div class="lose-message">はずれ...</div>`;
+                }
+                
+                // コインが100枚以上になったらクリア
+                if (coins >= WINNING_THRESHOLD) {
+                    resultMessage.innerHTML += `<div class="clear-message">ゲームクリア！おめでとう！</div>`;
+                }
+                
+                // ゲームをリセット
+                setTimeout(() => {
+                    spinning = false;
+                    startButton.disabled = false;
+                    resetGame();
+                }, 1200);
+            }
+            
+            // ベットに対する倍率を取得
+            function getMultiplierForBet(number, level) {
+                const multipliers = {
+                    '2': [2, 4, 6, 8],
+                    '4': [4, 8, 12, 16],
+                    '6': [6, 12, 18, 24],
+                    '10': [10, 20, 30, 40],
+                    '30': [30, 60, 90, 120]
+                };
+                
+                return multipliers[number][level - 1] || 0;
+            }
+            
+            // ウィンドウリサイズ時にルーレットを再設定
+            window.addEventListener('resize', function() {
+                setupRouletteNumbers();
+            });
+            
+            // 初期化
+            setupRouletteNumbers();
+            coinsDisplay.textContent = coins;
+        });
+    </script>
+</body>
+</html>

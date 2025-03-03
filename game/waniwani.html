@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ワニワニパニック</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #8fe0ff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background-image: linear-gradient(#8fe0ff 60%, #4cd964 60%);
+      min-height: 100vh;
+    }
+     
+    .game-title {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ff9500;
+      text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+      margin-bottom: 20px;
+    }
+     
+    .game-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #ffcc00;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+     
+    .score-board {
+      background-color: #fff;
+      border: 5px solid #ff9500;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+     
+    .time, .score {
+      font-size: 24px;
+      font-weight: bold;
+    }
+     
+    .message {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ff0000;
+      margin-bottom: 10px;
+      height: 30px;
+    }
+     
+    .holes-container {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      background-color: #4cd964;
+      padding: 20px;
+      border-radius: 10px;
+      position: relative;
+      flex-wrap: wrap;
+    }
+     
+    .hole {
+      width: 80px;
+      height: 80px;
+      background-color: #333;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+      margin: 5px;
+    }
+     
+    .croc {
+      width: 80px;
+      height: 0;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="green"/><circle cx="30" cy="30" r="10" fill="white"/><circle cx="30" cy="30" r="5" fill="black"/><circle cx="70" cy="30" r="10" fill="white"/><circle cx="70" cy="30" r="5" fill="black"/><path d="M20,60 Q50,80 80,60" stroke="red" stroke-width="5" fill="none"/><path d="M20,70 L30,60 L40,70 L50,60 L60,70 L70,60 L80,70" stroke="white" stroke-width="3" fill="none"/></svg>');
+      background-size: cover;
+      position: absolute;
+      bottom: -80px;
+      transition: height 0.2s, bottom 0.2s;
+      cursor: pointer;
+    }
+     
+    .croc.pink {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="hotpink"/><circle cx="30" cy="30" r="10" fill="white"/><circle cx="30" cy="30" r="5" fill="black"/><circle cx="70" cy="30" r="10" fill="white"/><circle cx="70" cy="30" r="5" fill="black"/><path d="M20,60 Q50,80 80,60" stroke="red" stroke-width="5" fill="none"/><path d="M20,70 L30,60 L40,70 L50,60 L60,70 L70,60 L80,70" stroke="white" stroke-width="3" fill="none"/></svg>');
+    }
+     
+    .croc.gold {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="gold"/><circle cx="30" cy="30" r="10" fill="white"/><circle cx="30" cy="30" r="5" fill="black"/><circle cx="70" cy="30" r="10" fill="white"/><circle cx="70" cy="30" r="5" fill="black"/><path d="M20,60 Q50,80 80,60" stroke="red" stroke-width="5" fill="none"/><path d="M20,70 L30,60 L40,70 L50,60 L60,70 L70,60 L80,70" stroke="white" stroke-width="3" fill="none"/></svg>');
+    }
+     
+    .croc.bomb {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="black"/><rect x="45" y="10" width="10" height="15" fill="gray"/><path d="M30,30 L70,70 M30,70 L70,30" stroke="red" stroke-width="8"/></svg>');
+    }
+     
+    .croc.show {
+      height: 80px;
+      bottom: 0;
+    }
+     
+    .croc.hit {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="green"/><circle cx="30" cy="30" r="10" fill="white"/><circle cx="30" cy="30" r="5" fill="black"/><circle cx="70" cy="30" r="10" fill="white"/><circle cx="70" cy="30" r="5" fill="black"/><path d="M30,70 Q50,50 70,70" stroke="red" stroke-width="5" fill="none"/><path d="M20,50 L30,60 L40,50 L50,60 L60,50 L70,60 L80,50" stroke="white" stroke-width="3" fill="none"/><text x="30" y="40" font-size="20" fill="yellow">痛!</text></svg>');
+    }
+     
+    .croc.pink.hit {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="hotpink"/><circle cx="30" cy="30" r="10" fill="white"/><circle cx="30" cy="30" r="5" fill="black"/><circle cx="70" cy="30" r="10" fill="white"/><circle cx="70" cy="30" r="5" fill="black"/><path d="M30,70 Q50,50 70,70" stroke="red" stroke-width="5" fill="none"/><path d="M20,50 L30,60 L40,50 L50,60 L60,50 L70,60 L80,50" stroke="white" stroke-width="3" fill="none"/><text x="30" y="40" font-size="20" fill="yellow">痛!</text></svg>');
+    }
+     
+    .croc.gold.hit {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" rx="10" fill="gold"/><circle cx="30" cy="30" r="10" fill="white"/><circle cx="30" cy="30" r="5" fill="black"/><circle cx="70" cy="30" r="10" fill="white"/><circle cx="70" cy="30" r="5" fill="black"/><path d="M30,70 Q50,50 70,70" stroke="red" stroke-width="5" fill="none"/><path d="M20,50 L30,60 L40,50 L50,60 L60,50 L70,60 L80,50" stroke="white" stroke-width="3" fill="none"/><text x="30" y="40" font-size="20" fill="yellow">痛!</text></svg>');
+    }
+     
+    .croc.bomb.hit {
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="black"/><rect x="45" y="10" width="10" height="15" fill="gray"/><path d="M20,20 L80,80 M20,80 L80,20" stroke="orange" stroke-width="10"/><circle cx="50" cy="50" r="30" fill="yellow" opacity="0.7"/></svg>');
+    }
+     
+    .controls {
+      margin-top: 20px;
+    }
+     
+    button {
+      background-color: #ff9500;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0 10px;
+      font-weight: bold;
+    }
+     
+    button:hover {
+      background-color: #ff7b00;
+    }
+     
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      display: none;
+      z-index: 100;
+    }
+     
+    .game-over h2 {
+      color: #ff5500;
+      margin-top: 0;
+    }
+     
+    .decoration {
+      position: absolute;
+      font-size: 24px;
+    }
+     
+    .palm1 { top: 10px; left: 10px; }
+    .palm2 { top: 10px; right: 10px; }
+    .hippo1 { bottom: 20px; left: 20px; transform: rotate(-10deg); }
+    .hippo2 { bottom: 20px; right: 20px; transform: rotate(10deg); }
+     
+    .point-animation {
+      position: absolute;
+      font-weight: bold;
+      animation: pointFade 1s forwards;
+      z-index: 10;
+    }
+     
+    @keyframes pointFade {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-50px); }
+    }
+
+    /* スマホ向けのスタイル調整 */
+    @media (max-width: 600px) {
+      .hole {
+        width: 60px;
+        height: 60px;
+      }
+      
+      .croc {
+        width: 60px;
+        bottom: -60px;
+      }
+      
+      .croc.show {
+        height: 60px;
+      }
+      
+      .time, .score {
+        font-size: 18px;
+      }
+      
+      .game-title {
+        font-size: 28px;
+      }
+      
+      .message {
+        font-size: 18px;
+      }
+      
+      button {
+        font-size: 16px;
+        padding: 8px 16px;
+        margin: 0 5px;
+      }
+    }
+
+    /* さらに小さい画面向け */
+    @media (max-width: 400px) {
+      .hole {
+        width: 50px;
+        height: 50px;
+      }
+      
+      .croc {
+        width: 50px;
+        bottom: -50px;
+      }
+      
+      .croc.show {
+        height: 50px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-title">ワニワニパニック</div>
+   
+  <div class="game-container">
+    <div class="decoration palm1">🌴</div>
+    <div class="decoration palm2">🌴</div>
+    <div class="decoration hippo1">🦛</div>
+    <div class="decoration hippo2">🦛</div>
+     
+    <div class="score-board">
+      <div class="time">残り時間: <span id="time">60</span>秒</div>
+      <div class="score">スコア: <span id="score">0</span>点</div>
+    </div>
+     
+    <div class="message" id="message"></div>
+     
+    <div class="holes-container" id="holesContainer">
+      <div class="hole"><div class="croc" data-type="normal" onclick="hitCroc(this)"></div></div>
+      <div class="hole"><div class="croc" data-type="normal" onclick="hitCroc(this)"></div></div>
+      <div class="hole"><div class="croc" data-type="normal" onclick="hitCroc(this)"></div></div>
+      <div class="hole"><div class="croc" data-type="normal" onclick="hitCroc(this)"></div></div>
+      <div class="hole"><div class="croc" data-type="normal" onclick="hitCroc(this)"></div></div>
+      <div class="hole"><div class="croc" data-type="normal" onclick="hitCroc(this)"></div></div>
+    </div>
+     
+    <div class="controls">
+      <button onclick="startGame()">スタート</button>
+      <button onclick="resetGame()">リセット</button>
+    </div>
+     
+    <div class="game-over" id="gameOver">
+      <h2>ゲームオーバー!</h2>
+      <p>あなたのスコア: <span id="finalScore">0</span>点</p>
+      <button onclick="resetGame()">もう一度プレイ</button>
+    </div>
+  </div>
+
+  <script>
+    let score = 0;
+    let timeLeft = 60;
+    let gameInterval;
+    let crocInterval;
+    let isPlaying = false;
+    let gameLevel = 1; // ゲームの難易度レベル
+    let crocSpeed = 1000; // ワニの出現速度（ミリ秒）
+    
+    // ワニの種類と点数
+    const crocTypes = {
+      normal: { points: 10, hideTime: 1200, chance: 0.8 },
+      pink: { points: 20, hideTime: 800, chance: 0.15 },
+      gold: { points: 50, hideTime: 500, chance: 0.05 },
+      bomb: { points: -30, hideTime: 1500, chance: 0.1 }
+    };
+     
+    function startGame() {
+      if (isPlaying) return;
+       
+      resetGame();
+      isPlaying = true;
+      gameLevel = 1;
+      crocSpeed = 1000;
+      document.getElementById('gameOver').style.display = 'none';
+      document.getElementById('message').textContent = '';
+       
+      // タイマーを開始
+      gameInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('time').textContent = timeLeft;
+         
+        // 難易度の変更
+       if (timeLeft === 45) { // 15秒経過
+     gameLevel = 2;
+     crocSpeed = 800;
+     document.getElementById('message').textContent = 'スピードアップ！';
+     setTimeout(() => {
+      document.getElementById('message').textContent = '';
+     }, 2000);
+    } else if (timeLeft === 30) { // 30秒経過
+     gameLevel = 3;
+     crocSpeed = 600;
+     document.getElementById('message').textContent = 'もう怒ったぞー！';
+     setTimeout(() => {
+      document.getElementById('message').textContent = '';
+     }, 2000);
+    }
+     
+    if (timeLeft <= 0) {
+     endGame();
+    }
+   }, 1000);
+    
+   // ワニの出現を開始
+   showCrocs();
+  }
+   
+  function showCrocs() {
+   if (!isPlaying) return;
+    
+   crocInterval = setInterval(() => {
+    // 難易度に応じてワニの出現数を調整
+    let numCrocsToShow = 1;
+    
+    if (gameLevel === 2) {
+     numCrocsToShow = Math.random() < 0.3 ? 2 : 1;
+    } else if (gameLevel === 3) {
+     numCrocsToShow = Math.random() < 0.5 ? 2 : 1;
+     if (Math.random() < 0.2) numCrocsToShow = 3;
+    }
+    
+    // 表示するワニの選択
+    const holes = document.querySelectorAll('.hole');
+    const availableHoles = Array.from(holes).filter(hole => 
+     !hole.querySelector('.croc.show')
+    );
+    
+    if (availableHoles.length === 0) return;
+    
+    // 表示する穴をランダムに選択
+    const selectedHoles = [];
+    for (let i = 0; i < Math.min(numCrocsToShow, availableHoles.length); i++) {
+     const randomIndex = Math.floor(Math.random() * availableHoles.length);
+     selectedHoles.push(availableHoles.splice(randomIndex, 1)[0]);
+    }
+    
+    selectedHoles.forEach(hole => {
+     const croc = hole.querySelector('.croc');
+     
+     // ワニのタイプをランダムに決定
+     let crocType = 'normal';
+     const rand = Math.random();
+     
+     if (rand < crocTypes.bomb.chance) {
+      crocType = 'bomb';
+     } else {
+      let typeRand = Math.random();
+      if (typeRand < crocTypes.gold.chance) {
+       crocType = 'gold';
+      } else if (typeRand < crocTypes.gold.chance + crocTypes.pink.chance) {
+       crocType = 'pink';
+      } else {
+       crocType = 'normal';
+      }
+     }
+     
+     // クラスをリセットして新しいタイプを設定
+     croc.className = 'croc';
+     croc.classList.add(crocType);
+     croc.dataset.type = crocType;
+     croc.dataset.hit = 'false';
+     
+     // ワニを表示
+     croc.classList.add('show');
+     
+     // 一定時間後に隠す
+     const hideTime = crocTypes[crocType].hideTime;
+     setTimeout(() => {
+      if (croc.dataset.hit === 'false') {
+       croc.classList.remove('show');
+      }
+     }, hideTime);
+    });
+   }, crocSpeed);
+  }
+   
+  function hitCroc(croc) {
+   if (!isPlaying || croc.dataset.hit === 'true' || !croc.classList.contains('show')) return;
+   
+   croc.dataset.hit = 'true';
+   croc.classList.add('hit');
+   
+   const crocType = croc.dataset.type;
+   const points = crocTypes[crocType].points;
+   
+   // 点数の更新
+   score += points;
+   document.getElementById('score').textContent = score;
+   
+   // 点数アニメーション
+   const pointAnimation = document.createElement('div');
+   pointAnimation.className = 'point-animation';
+   pointAnimation.style.color = points > 0 ? '#00cc00' : '#ff0000';
+   pointAnimation.textContent = points > 0 ? `+${points}` : points;
+   
+   // アニメーションの位置を設定
+   const rect = croc.getBoundingClientRect();
+   const container = document.getElementById('holesContainer').getBoundingClientRect();
+   
+   pointAnimation.style.left = `${rect.left - container.left + rect.width / 2}px`;
+   pointAnimation.style.top = `${rect.top - container.top}px`;
+   
+   document.getElementById('holesContainer').appendChild(pointAnimation);
+   
+   // アニメーション終了後に要素を削除
+   setTimeout(() => {
+    pointAnimation.remove();
+   }, 1000);
+   
+   // 少し待ってからワニを隠す
+   setTimeout(() => {
+    croc.classList.remove('show', 'hit');
+   }, 500);
+  }
+   
+  function endGame() {
+   isPlaying = false;
+   clearInterval(gameInterval);
+   clearInterval(crocInterval);
+   
+   // すべてのワニを隠す
+   document.querySelectorAll('.croc').forEach(croc => {
+    croc.classList.remove('show', 'hit');
+   });
+   
+   document.getElementById('finalScore').textContent = score;
+   document.getElementById('gameOver').style.display = 'block';
+  }
+   
+  function resetGame() {
+   isPlaying = false;
+   clearInterval(gameInterval);
+   clearInterval(crocInterval);
+   
+   score = 0;
+   timeLeft = 60;
+   document.getElementById('score').textContent = score;
+   document.getElementById('time').textContent = timeLeft;
+   document.getElementById('message').textContent = '';
+   
+   // すべてのワニを隠す
+   document.querySelectorAll('.croc').forEach(croc => {
+    croc.classList.remove('show', 'hit', 'pink', 'gold', 'bomb');
+    croc.dataset.type = 'normal';
+    croc.dataset.hit = 'false';
+   });
+   
+   document.getElementById('gameOver').style.display = 'none';
+  }
+ </script>
+</body>
+</html>

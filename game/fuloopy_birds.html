@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フロッピーバード</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            aspect-ratio: 2 / 3; /* キャンバスの縦横比を維持 */
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #87CEEB;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #score-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        p {
+            font-size: 1rem;
+            margin: 0.5rem 0;
+        }
+        
+        /* スマホ向け調整 */
+        @media (max-width: 480px) {
+            #game-container {
+                max-width: 90%;
+            }
+            #score-display {
+                font-size: 18px;
+            }
+            button {
+                padding: 8px 16px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div id="score-display">スコア: 0</div>
+        <div id="start-screen">
+            <h1>フロッピーバード</h1>
+            <p>スペースキーまたはクリックでジャンプ</p>
+            <button id="start-button">ゲームスタート</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score-display');
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('start-button');
+        const gameContainer = document.getElementById('game-container');
+
+        // キャンバスのリサイズ処理
+        function resizeCanvas() {
+            // 論理的なキャンバスサイズを維持
+            canvas.width = 400;
+            canvas.height = 600;
+        }
+        
+        // 初期リサイズと画面サイズ変更時のリサイズ
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ゲーム設定
+        const gravity = 0.5;
+        const jumpForce = -10;
+        const pipeWidth = 80;
+        const pipeGap = 200; // 初期の隙間の高さ
+        const pipeSpeed = 3;
+        const minPipeGap = 120; // 最小の隙間の高さ
+        const gapDecreaseRate = 0.5; // 隙間が狭くなる速度
+
+        // ゲーム状態
+        let bird = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 30,
+            velocity: 0
+        };
+
+        let pipes = [];
+        let score = 0;
+        let gameOver = false;
+        let gameStarted = false;
+        let currentPipeGap = pipeGap;
+        let frameCount = 0;
+
+        // 鳥の描画
+        function drawBird() {
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 目
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(bird.x + 10, bird.y - 5, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // くちばし
+            ctx.fillStyle = 'orange';
+            ctx.beginPath();
+            ctx.moveTo(bird.x + 15, bird.y);
+            ctx.lineTo(bird.x + 30, bird.y);
+            ctx.lineTo(bird.x + 15, bird.y + 10);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // パイプの描画
+        function drawPipes() {
+            pipes.forEach(pipe => {
+                // 上のパイプ
+                ctx.fillStyle = '#75B855';
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                
+                // パイプの先端（上）
+                ctx.fillStyle = '#75B855';
+                ctx.fillRect(pipe.x - 5, pipe.topHeight - 20, pipeWidth + 10, 20);
+                
+                // 下のパイプ
+                ctx.fillStyle = '#75B855';
+                ctx.fillRect(pipe.x, pipe.topHeight + pipe.gap, pipeWidth, canvas.height - (pipe.topHeight + pipe.gap));
+                
+                // パイプの先端（下）
+                ctx.fillStyle = '#75B855';
+                ctx.fillRect(pipe.x - 5, pipe.topHeight + pipe.gap, pipeWidth + 10, 20);
+            });
+        }
+
+        // 背景の描画
+        function drawBackground() {
+            // 空
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 地面
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+            
+            // 草
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 15);
+        }
+
+        // 新しいパイプの生成
+        function createPipe() {
+            const minTopHeight = 50;
+            const maxTopHeight = canvas.height - currentPipeGap - 50;
+            const topHeight = Math.floor(Math.random() * (maxTopHeight - minTopHeight + 1)) + minTopHeight;
+            
+            pipes.push({
+                x: canvas.width,
+                topHeight: topHeight,
+                gap: currentPipeGap,
+                passed: false
+            });
+            
+            // 徐々に隙間を狭くする（最小値まで）
+            if (currentPipeGap > minPipeGap) {
+                currentPipeGap -= gapDecreaseRate;
+            }
+        }
+
+        // 衝突判定
+        function checkCollision() {
+            // 地面との衝突
+            if (bird.y + bird.height / 2 >= canvas.height - 50) {
+                return true;
+            }
+            
+            // 天井との衝突
+            if (bird.y - bird.height / 2 <= 0) {
+                return true;
+            }
+            
+            // パイプとの衝突
+            for (let pipe of pipes) {
+                if (
+                    bird.x + bird.width / 2 > pipe.x && 
+                    bird.x - bird.width / 2 < pipe.x + pipeWidth
+                ) {
+                    // 上のパイプとの衝突
+                    if (bird.y - bird.height / 2 < pipe.topHeight) {
+                        return true;
+                    }
+                    
+                    // 下のパイプとの衝突
+                    if (bird.y + bird.height / 2 > pipe.topHeight + pipe.gap) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        // ゲームの更新
+        function update() {
+            if (!gameStarted || gameOver) return;
+            
+            frameCount++;
+            
+            // 鳥の移動
+            bird.velocity += gravity;
+            bird.y += bird.velocity;
+            
+            // パイプの移動
+            pipes.forEach(pipe => {
+                pipe.x -= pipeSpeed;
+                
+                // スコア加算
+                if (!pipe.passed && pipe.x + pipeWidth < bird.x) {
+                    pipe.passed = true;
+                    score++;
+                    scoreDisplay.textContent = `スコア: ${score}`;
+                }
+            });
+            
+            // 画面外に出たパイプを削除
+            pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
+            
+            // 新しいパイプの生成（一定間隔で）
+            if (frameCount % 100 === 0) {
+                createPipe();
+            }
+            
+            // 衝突判定
+            if (checkCollision()) {
+                gameOver = true;
+                setTimeout(() => {
+                    startScreen.style.display = 'flex';
+                    startScreen.querySelector('h1').textContent = `ゲームオーバー - スコア: ${score}`;
+                    startButton.textContent = 'リスタート';
+                }, 500);
+            }
+        }
+
+        // ゲームの描画
+        function draw() {
+            drawBackground();
+            drawPipes();
+            drawBird();
+            
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('ゲームオーバー', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        // ゲームループ
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ジャンプ処理
+        function jump() {
+            if (gameOver) return;
+            
+            if (!gameStarted) {
+                startGame();
+                return;
+            }
+            
+            bird.velocity = jumpForce;
+        }
+
+        // ゲーム開始
+        function startGame() {
+            gameStarted = true;
+            gameOver = false;
+            bird = {
+                x: 100,
+                y: 300,
+                width: 40,
+                height: 30,
+                velocity: 0
+            };
+            pipes = [];
+            score = 0;
+            currentPipeGap = pipeGap;
+            frameCount = 0;
+            scoreDisplay.textContent = `スコア: ${score}`;
+            startScreen.style.display = 'none';
+        }
+
+        // イベントリスナー
+        canvas.addEventListener('click', jump);
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault(); // タッチスクロールを防止
+            jump();
+        }, { passive: false });
+        
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                jump();
+                e.preventDefault(); // スペースキーでページスクロールを防止
+            }
+        });
+        
+        startButton.addEventListener('click', startGame);
+
+        // ゲーム開始
+        gameLoop();
+    </script>
+</body>
+</html>
