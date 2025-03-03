@@ -219,14 +219,13 @@
             <div class="game-title">倉庫番</div>
         </a>
         
-        <!-- ゲーム6: 魚釣り (魚) - 修正済み -->
         <a href="butlle.html" class="game-tile">
             <div class="game-icon butlle-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M6.5 12C5 10 5 7 7.5 5S12 4 14 6s2 5 0 8-4 5-7 5c0-1 0-3 2-3s4-1 5-3"></path>
-                    <path d="M16 8c1.5 0 3 .5 3 2s-1 2-3 2"></path>
-                    <circle cx="16" cy="7" r="1"></circle>
-                    <path d="M18 12v.5"></path>
+                    <!-- 尾びれを追加した魚のアイコン -->
+                    <path d="M3 12c3-4 6-4 9-4s6 0 9 4c-3 4-6 4-9 4s-6 0-9-4z"></path>
+                    <path d="M3 12L1 9v6l2-3z"></path> <!-- 追加した尾びれ部分 -->
+                    <circle cx="17" cy="12" r="1"></circle>
                 </svg>
             </div>
             <div class="game-title">魚釣り</div>
@@ -256,34 +255,25 @@
             <div class="game-title">ワニワニぱにっく</div>
         </a>
         
-        <!-- ゲーム9: フロッピーバード (ひよこ) - 修正済み -->
         <a href="fuloopy_birds.html" class="game-tile">
             <div class="game-icon fuloopy_birds-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="10" r="5"></circle>
-                    <path d="M8 15l-2 4"></path>
-                    <path d="M16 15l2 4"></path>
-                    <path d="M9 13l-2 3"></path>
-                    <path d="M15 13l2 3"></path>
-                    <path d="M10 9h-.01"></path>
-                    <path d="M14 9h-.01"></path>
-                    <path d="M11 11.5h2"></path>
-                    <path d="M10 14c1.333 0 2.667 0 4 0"></path>
-                    <path d="M12 7V5"></path>
+                    <!-- 丸い顔 -->
+                    <circle cx="12" cy="12" r="7"></circle>
+                    <!-- 目 -->
+                    <circle cx="12" cy="10" r="1" fill="currentColor"></circle>
+                    <!-- くちばし(三角形) - 位置を修正 -->
+                    <polygon points="21,12 17,10 17,14" fill="currentColor"></polygon>
                 </svg>
             </div>
             <div class="game-title">フロッピーバード</div>
         </a>
-        
         <!-- ゲーム10: 推理ゲーム (パイプ) - 修正済み -->
         <a href="suiri.html" class="game-tile">
             <div class="game-icon suiri-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 5c0 1.5-1 2-2 2s-2-.5-2-2 1-2 2-2 2 .5 2 2z"></path>
-                    <path d="M12 7v1"></path>
-                    <path d="M13 8h5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-5"></path>
-                    <path d="M20 12h-4a2 2 0 0 0-2 2v6"></path>
-                    <path d="M16 20H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h9"></path>
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
             </div>
             <div class="game-title">推理ゲーム</div>
