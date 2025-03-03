@@ -151,7 +151,7 @@
 
     <script>
         // ゲーム設定
-const config = {
+        const config = {
     gridSize: 40,
     playerSpeed: 40, // グリッドサイズと同じにして一度に1マス移動
     vehicleMinSpeed: 1,
@@ -165,8 +165,19 @@ const config = {
     trainMaxSpeed: 3, // 電車の最大速度
     safeLaneHeight: 2,
     whaleChance: 0.3, // クジラが出現する確率
-    whaleInterval: 5000 // クジラの出現間隔（ミリ秒）
+    whaleInterval: 5000, // クジラの出現間隔（ミリ秒）
+    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) // モバイルデバイス判定を追加
 };
+
+// モバイルデバイスの場合、速度を半分に調整
+if (config.isMobile) {
+    config.vehicleMinSpeed *= 0.5;
+    config.vehicleMaxSpeed *= 0.5;
+    config.logMinSpeed *= 0.5;
+    config.logMaxSpeed *= 0.5;
+    config.trainMinSpeed *= 0.5;
+    config.trainMaxSpeed *= 0.5;
+}
 
 // 干支のキャラクター設定
 const zodiacCharacters = [
@@ -2149,12 +2160,24 @@ function restart() {
     document.getElementById('gameComplete').style.display = 'none';
     
     // 設定を初期値に戻す
-    config.vehicleMinSpeed = 1;
-    config.vehicleMaxSpeed = 2;
-    config.logMinSpeed = 1;
-    config.logMaxSpeed = 3;
-    config.trainMinSpeed = 2;
-    config.trainMaxSpeed = 3;
+    if (config.isMobile) {
+        // モバイルの場合は半分の速度に設定
+        config.vehicleMinSpeed = 0.5;
+        config.vehicleMaxSpeed = 1;
+        config.logMinSpeed = 0.5;
+        config.logMaxSpeed = 1.5;
+        config.trainMinSpeed = 1;
+        config.trainMaxSpeed = 1.5;
+    } else {
+        // PC/タブレットの場合は通常速度
+        config.vehicleMinSpeed = 1;
+        config.vehicleMaxSpeed = 2;
+        config.logMinSpeed = 1;
+        config.logMaxSpeed = 3;
+        config.trainMinSpeed = 2;
+        config.trainMaxSpeed = 3;
+    }
+    
     config.whaleChance = 0.3;
     
     // レーン数も初期値に戻す

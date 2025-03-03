@@ -43,6 +43,13 @@
             background-color: rgba(0,0,0,0.3);
             border-radius: 10px;
         }
+        #fishCatalogLink {
+            display: inline-block;
+            margin-top: 10px;
+            color: #FFFF00;
+            text-decoration: underline;
+            cursor: pointer;
+        }
         #fishingButton {
     position: absolute;
     bottom: 60px;  /* 下からの位置を増やして上に移動 */
@@ -129,6 +136,86 @@
         .hidden {
             display: none;
         }
+        
+        /* 魚図鑑モーダル */
+        #fishCatalog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 800px;
+            height: 80%;
+            background-color: rgba(0, 0, 0, 0.85);
+            border-radius: 10px;
+            z-index: 4;
+            color: white;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+        }
+        
+        #fishCatalogHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        #fishCatalogHeader h2 {
+            margin: 0;
+            color: #FFFF00;
+        }
+        
+        #fishCatalogClose {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        #fishCatalogContent {
+            overflow-y: auto;
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            padding: 10px;
+        }
+        
+        .fishCard {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .fishIcon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+        
+        .fishDetails h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+        
+        .fishDetails p {
+            margin: 2px 0;
+            font-size: 14px;
+        }
+        
+        .fishRarity {
+            color: gold;
+        }
 
         /* スマホ表示用のメディアクエリ */
 @media (max-width: 768px) {
@@ -142,6 +229,10 @@
     #catchMessage {
         font-size: 20px;
     }
+    
+    #fishCatalogContent {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
 }
     </style>
 </head>
@@ -152,6 +243,7 @@
             <div>スコア: <span id="score">0</span></div>
             <div>残りエサ: <span id="bait">5</span></div>
             <div>釣った魚: <span id="caughtCount">0</span>種類</div>
+            <div id="fishCatalogLink">魚一覧を見る</div>
         </div>
         <button id="fishingButton">釣る</button>
         <div id="catchMessage"></div>
@@ -163,7 +255,16 @@
             <div id="rareFishMessage"></div>
             <div id="caughtFishList" style="margin-top: 20px; max-height: 200px; overflow-y: auto; width: 80%; text-align: left;"></div>
             <button id="restartButton">もう一度遊ぶ</button>
-        </div>  
+        </div>
+        
+        <!-- 魚一覧モーダル -->
+        <div id="fishCatalog">
+            <div id="fishCatalogHeader">
+                <h2>魚図鑑</h2>
+                <button id="fishCatalogClose">×</button>
+            </div>
+            <div id="fishCatalogContent"></div>
+        </div>
     </div>
 
     <script>
@@ -181,6 +282,10 @@
         const rareFishMessageElement = document.getElementById('rareFishMessage');
         const catchMessageElement = document.getElementById('catchMessage');
         const fishInfoElement = document.getElementById('fishInfo');
+        const fishCatalogLink = document.getElementById('fishCatalogLink');
+        const fishCatalog = document.getElementById('fishCatalog');
+        const fishCatalogClose = document.getElementById('fishCatalogClose');
+        const fishCatalogContent = document.getElementById('fishCatalogContent');
 
         // キャンバスサイズを設定
         function resizeCanvas() {
@@ -466,51 +571,51 @@
 
         // ゲームオーバー
         function gameOver() {
-    gameState.gameOver = true;
-    finalScoreElement.textContent = gameState.score;
-    finalCaughtCountElement.textContent = gameState.caughtFish.size;
-    
-    // レア魚を釣っていた場合の特別メッセージ
-    if (gameState.caughtRareFish) {
-        rareFishMessageElement.textContent = "すごい！レアな魚を釣り上げることができました！";
-    } else {
-        rareFishMessageElement.textContent = "次はもっとレアな魚を狙おう！";
-    }
-    
-    // 釣った魚の一覧を表示
-    const caughtFishListElement = document.getElementById('caughtFishList');
-    caughtFishListElement.innerHTML = '<h3>釣った魚一覧</h3>';
-    
-    // 魚の情報を格納する配列
-    const caughtFishArray = [];
-    
-    // 釣った魚の名前からデータベースの魚情報を取得
-    gameState.caughtFish.forEach(fishName => {
-        const fishData = fishDatabase.find(fish => fish.name === fishName);
-        if (fishData) {
-            caughtFishArray.push(fishData);
+            gameState.gameOver = true;
+            finalScoreElement.textContent = gameState.score;
+            finalCaughtCountElement.textContent = gameState.caughtFish.size;
+            
+            // レア魚を釣っていた場合の特別メッセージ
+            if (gameState.caughtRareFish) {
+                rareFishMessageElement.textContent = "すごい！レアな魚を釣り上げることができました！";
+            } else {
+                rareFishMessageElement.textContent = "次はもっとレアな魚を狙おう！";
+            }
+            
+            // 釣った魚の一覧を表示
+            const caughtFishListElement = document.getElementById('caughtFishList');
+            caughtFishListElement.innerHTML = '<h3>釣った魚一覧</h3>';
+            
+            // 魚の情報を格納する配列
+            const caughtFishArray = [];
+            
+            // 釣った魚の名前からデータベースの魚情報を取得
+            gameState.caughtFish.forEach(fishName => {
+                const fishData = fishDatabase.find(fish => fish.name === fishName);
+                if (fishData) {
+                    caughtFishArray.push(fishData);
+                }
+            });
+            
+            // レア度の高い順にソート
+            caughtFishArray.sort((a, b) => b.rarity - a.rarity);
+            
+            // 魚のリストをHTML形式で生成
+            if (caughtFishArray.length > 0) {
+                const listHTML = caughtFishArray.map(fish => 
+                    `<div style="margin: 5px 0; padding: 5px; background-color: rgba(255,255,255,0.1); border-radius: 5px;">
+                        <span style="color: ${fish.color};">●</span> 
+                        ${fish.name} - ${fish.points}点 
+                        <small>(レア度: ${'★'.repeat(fish.rarity)})</small>
+                    </div>`
+                ).join('');
+                caughtFishListElement.innerHTML += listHTML;
+            } else {
+                caughtFishListElement.innerHTML += '<div>魚は釣れませんでした...</div>';
+            }
+            
+            gameOverScreen.style.display = 'flex';
         }
-    });
-    
-    // レア度の高い順にソート
-    caughtFishArray.sort((a, b) => b.rarity - a.rarity);
-    
-    // 魚のリストをHTML形式で生成
-    if (caughtFishArray.length > 0) {
-        const listHTML = caughtFishArray.map(fish => 
-            `<div style="margin: 5px 0; padding: 5px; background-color: rgba(255,255,255,0.1); border-radius: 5px;">
-                <span style="color: ${fish.color};">●</span> 
-                ${fish.name} - ${fish.points}点 
-                <small>(レア度: ${'★'.repeat(fish.rarity)})</small>
-            </div>`
-        ).join('');
-        caughtFishListElement.innerHTML += listHTML;
-    } else {
-        caughtFishListElement.innerHTML += '<div>魚は釣れませんでした...</div>';
-    }
-    
-    gameOverScreen.style.display = 'flex';
-}
 
         // ゲームリスタート
         function restartGame() {
@@ -543,6 +648,102 @@
             
             gameOverScreen.style.display = 'none';
             fishingButton.style.display = 'none';
+        }
+
+        // 魚図鑑を表示
+        function showFishCatalog() {
+    // 現在のゲームを一時停止せずに図鑑を表示
+    fishCatalogContent.innerHTML = '';
+    
+    // すべての魚をレア度でソート
+    const sortedFish = [...fishDatabase].sort((a, b) => b.rarity - a.rarity);
+    
+    // 各魚のカードを作成
+    sortedFish.forEach(fish => {
+        const isCaught = gameState.caughtFish.has(fish.name);
+        const fishCard = document.createElement('div');
+        fishCard.className = 'fishCard';
+        fishCard.style.opacity = isCaught ? '1' : '0.5';
+        
+        // 魚のアイコンをキャンバスで描画
+        const fishIcon = document.createElement('canvas');
+        fishIcon.className = 'fishIcon';
+        fishIcon.width = 50;
+        fishIcon.height = 50;
+        const iconCtx = fishIcon.getContext('2d');
+        
+        if (isCaught) {
+            // 実際に泳いでいる魚と同じ描画を使用
+            iconCtx.save();
+            iconCtx.translate(25, 25); // 中央に移動
+            
+            // 魚のサイズを調整
+            const mockFish = {
+                type: fish,
+                width: 30,
+                height: 15,
+                direction: 1,
+                wiggleOffset: 0,
+                wiggleSpeed: 0
+            };
+            
+            // 魚種類に応じた描画関数を呼び出す
+            switch(fish.type) {
+                case "fish": drawNormalFish(mockFish, iconCtx); break;
+                case "squid": case "giantsquid": drawSquid(mockFish, iconCtx); break;
+                case "octopus": drawOctopus(mockFish, iconCtx); break;
+                case "shrimp": drawShrimp(mockFish, iconCtx); break;
+                case "crab": drawCrab(mockFish, iconCtx); break;
+                case "shark": drawShark(mockFish, iconCtx); break;
+                case "ray": drawRay(mockFish, iconCtx); break;
+                case "blowfish": drawBlowfish(mockFish, iconCtx); break;
+                case "anglerfish": drawAnglerfish(mockFish, iconCtx); break;
+                case "sunfish": drawSunfish(mockFish, iconCtx); break;
+                case "seacucumber": drawSeaCucumber(mockFish, iconCtx); break;
+                case "seaurchin": drawSeaUrchin(mockFish, iconCtx); break;
+                case "shellfish": drawShellfish(mockFish, iconCtx); break;
+                case "seapineapple": drawSeaPineapple(mockFish, iconCtx); break;
+                case "oarfish": drawOarfish(mockFish, iconCtx); break;
+                case "coelacanth": drawCoelacanth(mockFish, iconCtx); break;
+                case "salamander": drawSalamander(mockFish, iconCtx); break;
+                case "monster": drawMonster(mockFish, iconCtx); break;
+                default: drawNormalFish(mockFish, iconCtx);
+            }
+            
+            iconCtx.restore();
+        } else {
+            // 未捕獲の魚は「?」表示
+            iconCtx.fillStyle = fish.color;
+            iconCtx.beginPath();
+            iconCtx.arc(25, 25, 20, 0, Math.PI * 2);
+            iconCtx.fill();
+            
+            iconCtx.fillStyle = 'white';
+            iconCtx.font = 'bold 24px Arial';
+            iconCtx.textAlign = 'center';
+            iconCtx.textBaseline = 'middle';
+            iconCtx.fillText('?', 25, 25);
+        }
+        
+        // 魚の詳細情報
+        const fishDetails = document.createElement('div');
+        fishDetails.className = 'fishDetails';
+        fishDetails.innerHTML = `
+            <h3>${isCaught ? fish.name : '???'}</h3>
+            <p class="fishRarity">${'★'.repeat(fish.rarity)}</p>
+            <p>${isCaught ? fish.points + '点' : '???点'}</p>
+        `;
+        
+        fishCard.appendChild(fishIcon);
+        fishCard.appendChild(fishDetails);
+        fishCatalogContent.appendChild(fishCard);
+    });
+    
+    fishCatalog.style.display = 'flex';
+}
+        // 魚図鑑を閉じる
+        function closeFishCatalog() {
+            fishCatalog.style.display = 'none';
         }
 
         // 水生生物を描画
@@ -1470,16 +1671,16 @@
             const fisher = gameState.fisher;
             
             /// 船を描画 - ウサギの位置に近づける
-ctx.fillStyle = '#8B4513';
-ctx.beginPath();
-ctx.ellipse(fisher.x, fisher.y + fisher.height * 0.3, fisher.width * 0.7, fisher.height * 0.3, 0, 0, Math.PI * 2);
-ctx.fill();
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.ellipse(fisher.x, fisher.y + fisher.height * 0.3, fisher.width * 0.7, fisher.height * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
 
-// 船の上部
-ctx.fillStyle = '#A52A2A';
-ctx.beginPath();
-ctx.ellipse(fisher.x, fisher.y + fisher.height * 0.3, fisher.width * 0.6, fisher.height * 0.2, 0, 0, Math.PI);
-ctx.fill();
+            // 船の上部
+            ctx.fillStyle = '#A52A2A';
+            ctx.beginPath();
+            ctx.ellipse(fisher.x, fisher.y + fisher.height * 0.3, fisher.width * 0.6, fisher.height * 0.2, 0, 0, Math.PI);
+            ctx.fill();
             
             // ウサギの体 (丸みを帯びた形)
             ctx.fillStyle = '#FFFFFF';
@@ -1769,6 +1970,10 @@ ctx.fill();
             e.preventDefault();
             restartGame();
         }, { passive: false });
+        
+        // 魚図鑑リンクのイベントリスナー
+        fishCatalogLink.addEventListener('click', showFishCatalog);
+        fishCatalogClose.addEventListener('click', closeFishCatalog);
 
         // ゲーム開始
         requestAnimationFrame(update);
